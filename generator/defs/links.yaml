@@ -1,0 +1,1697 @@
+
+# One Manage Links:
+# -----------------
+
+# Get Connected Fabrics Count All Cluster
+# GET => /analyze/interFabrics/count
+
+# Get Connected Fabrics Detail All Cluster
+# GET => /analyze/interFabrics/detail
+
+# Execute One Manage Export Links
+# POST => /manage/linkActions/export
+
+# Execute One Manage Import Links
+# POST => /manage/linkActions/import
+
+# Delete One Manage Links
+# POST => /manage/linkActions/remove
+
+# List One Manage Links (Used)
+# GET => /manage/links
+
+# Create One Manage Link (Used)
+# POST => /manage/links
+
+# Get One Manage Link (Used)
+# GET => /manage/links/{linkId}
+
+# Replace One Manage Link By Id (Used)
+# PUT => /manage/links/{linkId}
+
+# List One Manage Logical Links
+# GET => /manage/logicalLinks
+
+# Manage Links:
+# -------------
+
+# Execute Export Links
+# POST => /linkActions/export
+
+# Execute Import Links
+# POST => /linkActions/import
+
+# Delete Links
+# POST => /linkActions/remove
+
+# List Links
+# GET => /links
+
+# Create Link
+# POST => /links
+
+# Delete Link
+# DELETE => /links/{linkId}
+
+# Get Link
+# GET => /links/{linkId}
+
+# Replace Link By Id
+# PUT => /links/{linkId}
+
+# List Logical Links
+# GET => /logicalLinks
+
+
+# =============================================================================
+# Links Feature YAML Definition
+# Generated from manage_nd_4.2.1.json and oneManage_nd_4.2.1.json
+# =============================================================================
+#
+# API Endpoints (manage):
+#   List links:   GET /appcenter/cisco/ndfc/api/v1/manage/links?fabric-name={fabricName}
+#   Get link:     GET /appcenter/cisco/ndfc/api/v1/manage/links/{linkId}?fabric-name={fabricName}
+#   Create link:  POST /appcenter/cisco/ndfc/api/v1/manage/links?fabric-name={fabricName}
+#   Update link:  PUT /appcenter/cisco/ndfc/api/v1/manage/links/{linkId}?fabric-name={fabricName}
+#   Delete link:  DELETE /appcenter/cisco/ndfc/api/v1/manage/links/{linkId}?fabric-name={fabricName}
+#
+# API Endpoints (oneManage / multi-cluster):
+#   List links:   GET /appcenter/cisco/ndfc/api/v1/manage-one/manage/links?fabric-name={fabricName}
+#   Get link:     GET /appcenter/cisco/ndfc/api/v1/manage-one/manage/links/{linkId}?fabric-name={fabricName}
+#   Create link:  POST /appcenter/cisco/ndfc/api/v1/manage-one/manage/links?fabric-name={fabricName}
+#   Update link:  PUT /appcenter/cisco/ndfc/api/v1/manage-one/manage/links/{linkId}?fabric-name={fabricName}
+#   Delete link:  DELETE /appcenter/cisco/ndfc/api/v1/manage-one/manage/links/{linkId}?fabric-name={fabricName}
+#
+# Link Action Endpoints:
+#   Export links: POST /appcenter/cisco/ndfc/api/v1/manage/linkActions/export?fabric-name={fabricName}
+#   Import links: POST /appcenter/cisco/ndfc/api/v1/manage/linkActions/import?fabric-name={fabricName}
+#   Remove links: POST /appcenter/cisco/ndfc/api/v1/manage/linkActions/remove?fabric-name={fabricName}
+#
+# Logical Links:
+#   List:         GET /appcenter/cisco/ndfc/api/v1/manage/logicalLinks?fabric-name={fabricName}
+#
+# Link Policy Types (policyType discriminator in configData):
+#   ipv6LinkLocal: IPv6 Link-Local intra-fabric link (spine-leaf/leaf-leaf)
+#   numbered: Numbered (Point-to-Point) intra-fabric link
+#   unnumbered: Unnumbered intra-fabric link
+#   vpcPeerKeepalive: vPC Peer Keep-Alive link between vPC peer switches
+#   ipfmNumbered: IPFM Numbered intra-fabric link
+#   preprovision: Pre-provisioned intra-fabric link
+#   iosXeNumbered: IOS-XE Numbered intra-fabric link
+#   ebgpVrfLite: eBGP VRF Lite inter-fabric link (External/VRF-Lite connectivity)
+#   ospfVrfLite: OSPF VRF Lite inter-fabric link
+#   layer3DciVrfLite: Layer-3 DCI VRF Lite inter-fabric link
+#   csrMultisiteUnderlay: CSR Multisite Underlay inter-fabric link
+#   multisiteUnderlay: Multisite Underlay inter-fabric link (border-gateway to border-gateway)
+#   vxlanAciMultisiteUnderlay: VXLAN-ACI Multisite Underlay inter-fabric link
+#   csrEvpnMultisiteOverlay: CSR EVPN Multisite Overlay inter-fabric link
+#   multisiteOverlay: Multisite EVPN Overlay inter-fabric link (border-gateway to border-gateway)
+#   vxlanAciEvpnOverlay: VXLAN-ACI EVPN Overlay inter-fabric link
+#   csrBgpOverIpsec: CSR BGP over IPSec inter-fabric link
+#   layer2Dci: Layer-2 DCI inter-fabric link (trunk between fabrics)
+#   mplsUnderlay: MPLS Underlay link (VXLAN to MPLS handoff)
+#   mplsOverlay: MPLS Overlay link (BGP EVPN peering for MPLS handoff)
+#   routedFabric: Routed Fabric link
+#   userDefined: User-defined link with custom template
+#
+# API Payload Structure:
+#   {
+#     "links": [{
+#       "srcFabricName": "...",
+#       "srcSwitchId": "...",
+#       "srcSwitchName": "...",
+#       "srcInterfaceName": "...",
+#       "dstFabricName": "...",
+#       "dstSwitchId": "...",
+#       "dstSwitchName": "...",
+#       "dstInterfaceName": "...",
+#       "configData": {
+#         "policyType": "<policyType>",
+#         "templateInputs": { ... }
+#       }
+#     }]
+#   }
+# =============================================================================
+
+
+
+
+# class LinkTemplateInputsModel(NDNestedModel):
+#     """
+#     Template specific configuration parameters for a link.
+#     """
+
+#     # --- eBGP core settings ---
+#     src_ebgp_asn: Optional[str] = Field(default=None, alias="srcEbgpAsn")
+#     dst_ebgp_asn: Optional[str] = Field(default=None, alias="dstEbgpAsn")
+#     src_ip_address_mask: Optional[str] = Field(default=None, alias="srcIpAddressMask")
+#     dst_ip_address_mask: Optional[str] = Field(default=None, alias="dstIpAddressMask")
+#     dst_ip_address: Optional[str] = Field(default=None, alias="dstIpAddress")
+#     src_ip_address: Optional[str] = Field(default=None, alias="srcIpAddress")
+#     src_ipv6_address_mask: Optional[str] = Field(default=None, alias="srcIpv6AddressMask")
+#     dst_ipv6_address: Optional[str] = Field(default=None, alias="dstIpv6Address")
+#     dst_ipv6_address_mask: Optional[str] = Field(default=None, alias="dstIpv6AddressMask")
+#     link_mtu: Optional[int] = Field(default=None, alias="linkMtu")
+#     routing_tag: Optional[str] = Field(default=None, alias="routingTag")
+
+#     # --- eBGP password ---
+#     enable_ebgp_password: Optional[bool] = Field(default=None, alias="enableEbgpPassword")
+#     ebgp_password: Optional[str] = Field(default=None, alias="ebgpPassword")
+#     ebgp_auth_key_encryption_type: Optional[str] = Field(default=None, alias="ebgpAuthKeyEncryptionType")
+#     inherit_ebgp_password_msd_settings: Optional[bool] = Field(default=None, alias="inheritEbgpPasswordMsdSettings")
+
+#     # --- eBGP advanced ---
+#     ebgp_bfd: Optional[bool] = Field(default=None, alias="ebgpBfd")
+#     ebgp_log_neighbor_change: Optional[bool] = Field(default=None, alias="ebgpLogNeighborChange")
+#     ebgp_maximum_paths: Optional[int] = Field(default=None, alias="ebgpMaximumPaths")
+#     ebgp_send_comboth: Optional[bool] = Field(default=None, alias="ebgpSendComboth")
+#     ebgp_multihop: Optional[int] = Field(default=None, alias="ebgpMultihop")
+
+#     # --- Interface settings ---
+#     interface_admin_state: Optional[bool] = Field(default=None, alias="interfaceAdminState")
+#     macsec: Optional[bool] = Field(default=None, alias="macsec")
+#     fec: Optional[str] = Field(default=None, alias="fec")
+#     speed: Optional[str] = Field(default=None, alias="speed")
+#     mtu: Optional[int] = Field(default=None, alias="mtu")
+
+#     # --- DCI tracking ---
+#     dci_tracking_enable_flag: Optional[bool] = Field(default=None, alias="dciTrackingEnableFlag")
+#     dci_tracking: Optional[bool] = Field(default=None, alias="dciTracking")
+#     inherit_ttag_fabric_setting: Optional[bool] = Field(default=None, alias="inheritTtagFabricSetting")
+
+#     # --- Interface descriptions and freeform config ---
+#     src_interface_description: Optional[str] = Field(default=None, alias="srcInterfaceDescription")
+#     dst_interface_description: Optional[str] = Field(default=None, alias="dstInterfaceDescription")
+#     src_interface_config: Optional[str] = Field(default=None, alias="srcInterfaceConfig")
+#     dst_interface_config: Optional[str] = Field(default=None, alias="dstInterfaceConfig")
+
+#     # --- IP addressing (numbered / unnumbered / vpcPeerKeepalive) ---
+#     src_ip: Optional[str] = Field(default=None, alias="srcIp")
+#     dst_ip: Optional[str] = Field(default=None, alias="dstIp")
+#     src_ipv6: Optional[str] = Field(default=None, alias="srcIpv6")
+#     dst_ipv6: Optional[str] = Field(default=None, alias="dstIpv6")
+
+#     # --- BFD / DHCP relay (numbered links) ---
+#     bfd_echo_on_src_interface: Optional[bool] = Field(default=None, alias="bfdEchoOnSrcInterface")
+#     bfd_echo_on_dst_interface: Optional[bool] = Field(default=None, alias="bfdEchoOnDstInterface")
+#     dhcp_relay_on_src_interface: Optional[bool] = Field(default=None, alias="dhcpRelayOnSrcInterface")
+#     dhcp_relay_on_dst_interface: Optional[bool] = Field(default=None, alias="dhcpRelayOnDstInterface")
+
+#     # --- Multisite overlay ---
+#     ipv4_trm: Optional[bool] = Field(default=None, alias="ipv4Trm")
+#     ipv6_trm: Optional[bool] = Field(default=None, alias="ipv6Trm")
+#     redistribute_route_server: Optional[bool] = Field(default=None, alias="redistributeRouteServer")
+#     route_server_routing_tag: Optional[str] = Field(default=None, alias="routeServerRoutingTag")
+#     skip_config_generation: Optional[bool] = Field(default=None, alias="skipConfigGeneration")
+
+#     # --- Layer3 DCI VRF Lite ---
+#     dst_vrf_name: Optional[str] = Field(default=None, alias="dstVrfName")
+#     src_vrf_name: Optional[str] = Field(default=None, alias="srcVrfName")
+#     ip_redirects: Optional[bool] = Field(default=None, alias="ipRedirects")
+#     ipv4_pim: Optional[bool] = Field(default=None, alias="ipv4Pim")
+#     ipv6_pim: Optional[bool] = Field(default=None, alias="ipv6Pim")
+#     netflow_on_src_interface: Optional[bool] = Field(default=None, alias="netflowOnSrcInterface")
+#     netflow_on_dst_interface: Optional[bool] = Field(default=None, alias="netflowOnDstInterface")
+#     src_netflow_monitor_name: Optional[str] = Field(default=None, alias="srcNetflowMonitorName")
+#     dst_netflow_monitor_name: Optional[str] = Field(default=None, alias="dstNetflowMonitorName")
+
+#     # --- eBGP VRF Lite ---
+#     auto_gen_config_default_vrf: Optional[bool] = Field(default=None, alias="autoGenConfigDefaultVrf")
+#     auto_gen_config_nx_peer_default_vrf: Optional[bool] = Field(default=None, alias="autoGenConfigNxPeerDefaultVrf")
+#     auto_gen_config_peer: Optional[bool] = Field(default=None, alias="autoGenConfigPeer")
+#     default_vrf_ebgp_neighbor_password: Optional[str] = Field(default=None, alias="defaultVrfEbgpNeighborPassword")
+#     redistrib_ebgp_route_map_name: Optional[str] = Field(default=None, alias="redistribEbgpRouteMapName")
+#     template_config_gen_peer: Optional[str] = Field(default=None, alias="templateConfigGenPeer")
+#     vrf_name_nx_peer_switch: Optional[str] = Field(default=None, alias="vrfNameNxPeerSwitch")
+#     override_fabric_macsec: Optional[bool] = Field(default=None, alias="overrideFabricMacsec")
+
+#     # --- MACsec ---
+#     macsec_cipher_suite: Optional[str] = Field(default=None, alias="macsecCipherSuite")
+#     macsec_fallback_cryptographic_algorithm: Optional[str] = Field(default=None, alias="macsecFallbackCryptographicAlgorithm")
+#     macsec_fallback_key_string: Optional[str] = Field(default=None, alias="macsecFallbackKeyString")
+#     macsec_primary_cryptographic_algorithm: Optional[str] = Field(default=None, alias="macsecPrimaryCryptographicAlgorithm")
+#     macsec_primary_key_string: Optional[str] = Field(default=None, alias="macsecPrimaryKeyString")
+
+#     # --- QKD / KME / Trustpoint ---
+#     qkd: Optional[bool] = Field(default=None, alias="qkd")
+#     ignore_certificate: Optional[bool] = Field(default=None, alias="ignoreCertificate")
+#     src_kme_server_ip: Optional[str] = Field(default=None, alias="srcKmeServerIp")
+#     dst_kme_server_ip: Optional[str] = Field(default=None, alias="dstKmeServerIp")
+#     src_macsec_key_chain_prefix: Optional[str] = Field(default=None, alias="srcMacsecKeyChainPrefix")
+#     dst_macsec_key_chain_prefix: Optional[str] = Field(default=None, alias="dstMacsecKeyChainPrefix")
+#     src_qkd_profile_name: Optional[str] = Field(default=None, alias="srcQkdProfileName")
+#     dst_qkd_profile_name: Optional[str] = Field(default=None, alias="dstQkdProfileName")
+#     src_trustpoint_label: Optional[str] = Field(default=None, alias="srcTrustpointLabel")
+#     dst_trustpoint_label: Optional[str] = Field(default=None, alias="dstTrustpointLabel")
+
+#     # --- Layer2 DCI ---
+#     bpdu_guard: Optional[str] = Field(default=None, alias="bpduGuard")
+#     trunk_allowed_vlans: Optional[str] = Field(default=None, alias="trunkAllowedVlans")
+#     native_vlan: Optional[int] = Field(default=None, alias="nativeVlan")
+#     port_type_fast: Optional[bool] = Field(default=None, alias="portTypeFast")
+#     mtu_type: Optional[str] = Field(default=None, alias="mtuType")
+
+#     # --- vPC Peer Keepalive ---
+#     interface_vrf: Optional[str] = Field(default=None, alias="interfaceVrf")
+
+
+# class LinkConfigDataModel(NDNestedModel):
+#     """
+#     The configData block inside a link.
+#     """
+
+#     policy_type: Optional[str] = Field(default=None, alias="policyType")
+#     template_inputs: Optional[LinkTemplateInputsModel] = Field(default=None, alias="templateInputs")
+#     template_name: Optional[str] = Field(default=None, alias="templateName")
+
+
+# class NDLinkModel(NDBaseModel):
+#     """
+#     Nexus Dashboard Link configuration model.
+#     """
+
+#     # --- Identity Fields ---
+#     src_cluster_name: Optional[str] = Field(default=None, alias="srcClusterName")
+#     dst_cluster_name: Optional[str] = Field(default=None, alias="dstClusterName")
+#     src_fabric_name: Optional[str] = Field(default=None, alias="srcFabricName")
+#     dst_fabric_name: Optional[str] = Field(default=None, alias="dstFabricName")
+#     src_switch_name: Optional[str] = Field(default=None, alias="srcSwitchName")
+#     dst_switch_name: Optional[str] = Field(default=None, alias="dstSwitchName")
+#     src_interface_name: Optional[str] = Field(default=None, alias="srcInterfaceName")
+#     dst_interface_name: Optional[str] = Field(default=None, alias="dstInterfaceName")
+
+#     # --- Metadata ---
+#     link_type: Optional[str] = Field(default=None, alias="linkType")
+
+#     # --- API-generated fields (captured from GET, excluded from payload) ---
+#     link_id: Optional[str] = Field(default=None, alias="linkId")
+#     src_switch_id: Optional[str] = Field(default=None, alias="srcSwitchId")
+#     dst_switch_id: Optional[str] = Field(default=None, alias="dstSwitchId")
+
+resource:
+  name: link
+  generate_tf_resource: true
+  skip_equality: true
+  attributes:
+  # Used in: all
+  - model_name: linkId
+    tf_name: link_id
+    description: Unique identifier of the link.
+    type: String
+    computed: true
+    payload_hide: true
+    example: example_linkId
+    include_empty: true
+
+  # Used in: all
+  - model_name: srcSwitchId
+    tf_name: src_switch_id
+    description: Unique identifier of the source switch.
+    type: String
+    optional: true
+    example: example_srcSwitchId
+    include_empty: true
+
+  # Used in: all
+  - model_name: dstSwitchId
+    tf_name: dst_switch_id
+    description: Unique identifier of the destination switch.
+    type: String
+    optional: true
+    example: example_dstSwitchId
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> srcFabricName
+  # Used in: all
+  - model_name: srcFabricName
+    tf_name: src_fabric_name
+    description: Name of the source fabric.
+    type: String
+    mandatory: true
+    example: example_srcFabricName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> srcSwitchName
+  # Used in: all
+  - model_name: srcSwitchName
+    tf_name: src_switch_name
+    description: Name of the source device.
+    type: String
+    mandatory: true
+    example: example_srcSwitchName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> srcInterfaceName
+  # Used in: all
+  - model_name: srcInterfaceName
+    tf_name: src_interface_name
+    description: Name of the source interface.
+    type: String
+    mandatory: true
+    example: example_srcInterfaceName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> dstFabricName
+  # Used in: all
+  - model_name: dstFabricName
+    tf_name: dst_fabric_name
+    description: Name of the destination fabric.
+    type: String
+    mandatory: true
+    example: example_dstFabricName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> dstSwitchName
+  # Used in: all
+  - model_name: dstSwitchName
+    tf_name: dst_switch_name
+    description: Name of the destination device.
+    type: String
+    mandatory: true
+    example: example_dstSwitchName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkBase -> dstInterfaceName
+  # Used in: all
+  - model_name: dstInterfaceName
+    tf_name: dst_interface_name
+    description: Name of the destination interface.
+    type: String
+    mandatory: true
+    example: example_dstInterfaceName
+    include_empty: true
+
+  # NEW: From Python class NDLinkModel -> srcClusterName (alias "srcClusterName")
+  # Used in: all
+  - model_name: srcClusterName
+    tf_name: src_cluster_name
+    description: Name of the source cluster.
+    type: String
+    optional: true
+    example: example_srcClusterName
+    include_empty: true
+
+  # NEW: From Python class NDLinkModel -> dstClusterName (alias "dstClusterName")
+  # Used in: all
+  - model_name: dstClusterName
+    tf_name: dst_cluster_name
+    description: Name of the destination cluster.
+    type: String
+    optional: true
+    example: example_dstClusterName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> linkReadOnly -> linkType
+  # Used in: all
+  - model_name: linkType
+    tf_name: link_type
+    description: Type of the link.
+    type: String
+    computed: true
+    example: example_linkType
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> templateConfig -> configData -> policyType
+  # Discriminator field that determines which templateInputs fields are applicable
+  # Allowed values: ['csrBgpOverIpsec', 'csrEvpnMultisiteOverlay', 'csrMultisiteUnderlay', 'ebgpVrfLite', 'iosXeNumbered', 'ipfmNumbered', 'ipv6LinkLocal', 'layer2Dci', 'layer3DciVrfLite', 'mplsOverlay', 'mplsUnderlay', 'multisiteOverlay', 'multisiteUnderlay', 'numbered', 'ospfVrfLite', 'preprovision', 'routedFabric', 'unnumbered', 'userDefined', 'vpcPeerKeepalive', 'vxlanAciEvpnOverlay', 'vxlanAciMultisiteUnderlay']
+  # Used in: all
+  - model_name: policyType
+    tf_name: policy_type
+    description: The link policy type. Determines the set of applicable templateInputs fields.
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - configData
+    example: numbered
+    include_empty: true
+
+  # =============================================================================
+  # configData -> templateInputs (flat structure matching API payload)
+  #
+  # The fields below are the union of all templateInputs across all policy types.
+  # Each attribute has an inline comment listing which policy types use it.
+  # Not all fields apply to all policy types - only the fields for the chosen
+  # policyType should be set. Extra fields are ignored by the API.
+  #
+  # NOTE: In the API payload, templateInputs is a flat object under configData:
+#  # "configData": { "policyType": "...", "templateInputs": { <fields> } }
+  # =============================================================================
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> srcInterfaceDescription
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, preprovision, iosXeNumbered, ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, csrMultisiteUnderlay, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci, mplsUnderlay, routedFabric
+  # Max: 254
+  - model_name: srcInterfaceDescription
+    tf_name: src_interface_description
+    description: Description for the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcInterfaceDescription
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> srcInterfaceConfig
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, preprovision, iosXeNumbered, ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, csrMultisiteUnderlay, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci, mplsUnderlay, routedFabric
+  - model_name: srcInterfaceConfig
+    tf_name: src_interface_config
+    description: >-
+      Source interface freeform configuration. All configurations should strictly match 'show run'
+      output, with respect to case and newlines. Any mismatches will yield unexpected diffs during
+      deployment.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcInterfaceConfig
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> dstInterfaceDescription
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, preprovision, iosXeNumbered, ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, csrMultisiteUnderlay, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci, mplsUnderlay, routedFabric
+  # Max: 254
+  - model_name: dstInterfaceDescription
+    tf_name: dst_interface_description
+    description: Description for the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstInterfaceDescription
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> dstInterfaceConfig
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, preprovision, iosXeNumbered, ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, csrMultisiteUnderlay, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci, mplsUnderlay, routedFabric
+  - model_name: dstInterfaceConfig
+    tf_name: dst_interface_config
+    description: >-
+      Destination interface freeform configuration. All configurations should strictly match 'show
+      run' output, with respect to case and newlines. Any mismatches will yield unexpected diffs
+      during deployment.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstInterfaceConfig
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> interfaceAdminState
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, iosXeNumbered
+  # Default: True
+  - model_name: interfaceAdminState
+    tf_name: interface_admin_state
+    description: Admin state of the interface.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: true
+    example: true
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> mtu
+  # Used in: ipv6LinkLocal, numbered, unnumbered, vpcPeerKeepalive, ipfmNumbered, preprovision, iosXeNumbered
+  # Required in: ipfmNumbered, ipv6LinkLocal, numbered, unnumbered
+  # Default: 9216; Min: 576; Max: 9216
+  - model_name: mtu
+    tf_name: mtu
+    description: Interface MTU.
+    type: Int64
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: 9216
+    example: 9216
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> linkMtu
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteUnderlay, mplsUnderlay, routedFabric
+  # Default: 9216; Min: 576; Max: 9216
+  - model_name: linkMtu
+    tf_name: link_mtu
+    description: Interface MTU.
+    type: Int64
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: 9216
+    example: 9216
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> speed
+  # Used in: ipv6LinkLocal, numbered, unnumbered, ipfmNumbered, preprovision, iosXeNumbered, layer3DciVrfLite, multisiteUnderlay, layer2Dci
+  # Allowed values: ['auto', '10Mb', '100Mb', '1Gb', '2.5Gb', '5Gb', '10Gb', '25Gb', '40Gb', '50Gb', '100Gb', '200Gb', '400Gb', '800Gb']
+  - model_name: speed
+    tf_name: speed
+    description: Interface Speed
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: auto
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> fec
+  # Used in: ipv6LinkLocal, numbered, unnumbered
+  # Default: auto; Allowed values: ['auto', 'fcFec', 'off', 'rsCons16', 'rsFec', 'rsIeee']
+  - model_name: fec
+    tf_name: fec
+    description: Forward Error Correction (FEC) mode
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: auto
+    example: auto
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ipv6LinkLocal -> templateInputs -> macsec
+  # Used in: ipv6LinkLocal, numbered, unnumbered, ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Default: False
+  - model_name: macsec
+    tf_name: macsec
+    description: Enable MACsec on the link.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> srcIp
+  # Used in: numbered, vpcPeerKeepalive, ipfmNumbered, iosXeNumbered
+  # Required in: ipfmNumbered
+  - model_name: srcIp
+    tf_name: src_ip
+    description: IP address of the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcIp
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> srcIpv6
+  # Used in: numbered, vpcPeerKeepalive
+  - model_name: srcIpv6
+    tf_name: src_ipv6
+    description: IPv6 address of the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcIpv6
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> srcIpAddress
+  # Used in: multisiteOverlay, vxlanAciEvpnOverlay
+  # Required in: multisiteOverlay, vxlanAciEvpnOverlay
+  - model_name: srcIpAddress
+    tf_name: src_ip_address
+    description: IP address for the sub-interface in each VRF in the source fabric.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcIpAddress
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcIpAddressMask
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, csrMultisiteUnderlay, multisiteUnderlay, vxlanAciMultisiteUnderlay, mplsUnderlay, routedFabric
+  # Required in: csrMultisiteUnderlay, mplsUnderlay
+  - model_name: srcIpAddressMask
+    tf_name: src_ip_address_mask
+    description: IPv4 address with mask of the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: 192.168.10.1/24
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> srcIpv6AddressMask
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteUnderlay, vxlanAciMultisiteUnderlay, routedFabric
+  # tf_name corrected: src_ipv6address_mask -> src_ipv6_address_mask (per Python class attribute name)
+  - model_name: srcIpv6AddressMask
+    tf_name: src_ipv6_address_mask
+    description: IPv6 address with mask of the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: '2001:db8:abcd:0001::1/64'
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> dstIp
+  # Used in: numbered, vpcPeerKeepalive, ipfmNumbered, iosXeNumbered, csrMultisiteUnderlay
+  # Required in: csrMultisiteUnderlay, ipfmNumbered
+  - model_name: dstIp
+    tf_name: dst_ip
+    description: IP address of the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstIp
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> dstIpv6
+  # Used in: numbered, vpcPeerKeepalive
+  - model_name: dstIpv6
+    tf_name: dst_ipv6
+    description: IPv6 address of the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstIpv6
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstIpAddress
+  # Used in: ebgpVrfLite, ospfVrfLite, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, mplsUnderlay, mplsOverlay, routedFabric
+  # Required in: mplsOverlay, mplsUnderlay, multisiteOverlay, vxlanAciEvpnOverlay
+  - model_name: dstIpAddress
+    tf_name: dst_ip_address
+    description: Destination IP address.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstIpAddress
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> dstIpAddressMask
+  # Used in: layer3DciVrfLite
+  - model_name: dstIpAddressMask
+    tf_name: dst_ip_address_mask
+    description: IPv4 address with mask of the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: 192.168.10.2/24
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstIpv6Address
+  # Used in: ebgpVrfLite, ospfVrfLite, multisiteUnderlay, vxlanAciMultisiteUnderlay, routedFabric
+  # tf_name corrected: dst_ipv6address -> dst_ipv6_address (per Python class attribute name)
+  - model_name: dstIpv6Address
+    tf_name: dst_ipv6_address
+    description: IPv6 address of the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstIpv6Address
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> dstIpv6AddressMask
+  # Used in: layer3DciVrfLite
+  # tf_name corrected: dst_ipv6address_mask -> dst_ipv6_address_mask (per Python class attribute name)
+  - model_name: dstIpv6AddressMask
+    tf_name: dst_ipv6_address_mask
+    description: IPv6 address with mask of the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: '2001:db8:abcd:0001::2/64'
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcEbgpAsn
+  # Used in: ebgpVrfLite, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, mplsOverlay, routedFabric
+  # Required in: ebgpVrfLite, mplsOverlay, multisiteOverlay, multisiteUnderlay, routedFabric, vxlanAciEvpnOverlay, vxlanAciMultisiteUnderlay
+  - model_name: srcEbgpAsn
+    tf_name: src_ebgp_asn
+    description: BGP autonomous system number in the source fabric.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcEbgpAsn
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstEbgpAsn
+  # Used in: ebgpVrfLite, multisiteUnderlay, vxlanAciMultisiteUnderlay, multisiteOverlay, vxlanAciEvpnOverlay, mplsOverlay, routedFabric
+  # Required in: ebgpVrfLite, mplsOverlay, multisiteOverlay, multisiteUnderlay, routedFabric, vxlanAciEvpnOverlay, vxlanAciMultisiteUnderlay
+  - model_name: dstEbgpAsn
+    tf_name: dst_ebgp_asn
+    description: BGP autonomous system number in the destination fabric.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstEbgpAsn
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpPassword
+  # Used in: multisiteUnderlay, multisiteOverlay
+  - model_name: ebgpPassword
+    tf_name: ebgp_password
+    description: Encrypted eBGP password hex string.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_ebgpPassword
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpAuthKeyEncryptionType
+  # Used in: multisiteUnderlay, multisiteOverlay
+  # Default: 3des; Allowed values: ['3des', 'type6', 'type7']
+  - model_name: ebgpAuthKeyEncryptionType
+    tf_name: ebgp_auth_key_encryption_type
+    description: >-
+      BGP key encryption type: 3 - 3DES, 6 - Cisco type 6, 7 - Cisco type 7
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: 3des
+    example: 3des
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpBfd
+  # Used in: multisiteUnderlay
+  # Default: False
+  - model_name: ebgpBfd
+    tf_name: ebgp_bfd
+    description: Enable BGP BFD.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpLogNeighborChange
+  # Used in: multisiteUnderlay
+  # Default: False
+  - model_name: ebgpLogNeighborChange
+    tf_name: ebgp_log_neighbor_change
+    description: Enable BGP log neighbor change.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpMaximumPaths
+  # Used in: multisiteUnderlay, routedFabric
+  # Required in: routedFabric
+  # Default: 64; Min: 1; Max: 64
+  - model_name: ebgpMaximumPaths
+    tf_name: ebgp_maximum_paths
+    description: BGP maximum paths.
+    type: Int64
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: 64
+    example: 64
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> ebgpMultihop
+  # Used in: csrEvpnMultisiteOverlay, multisiteOverlay
+  # Default: 5; Min: 2; Max: 255
+  - model_name: ebgpMultihop
+    tf_name: ebgp_multihop
+    description: eBGP time-to-live value for the remote peer.
+    type: Int64
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: 5
+    example: 5
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> ebgpSendComboth
+  # Used in: multisiteUnderlay
+  # Default: False
+  - model_name: ebgpSendComboth
+    tf_name: ebgp_send_comboth
+    description: Enable BGP send-community both.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> csrMultisiteUnderlay -> templateInputs -> enableEbgpPassword
+  # Used in: csrMultisiteUnderlay, multisiteUnderlay, csrEvpnMultisiteOverlay, multisiteOverlay
+  # Default: False
+  - model_name: enableEbgpPassword
+    tf_name: enable_ebgp_password
+    description: Enable eBGP password.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> inheritEbgpPasswordMsdSettings
+  # Used in: multisiteUnderlay, multisiteOverlay
+  # Default: True
+  - model_name: inheritEbgpPasswordMsdSettings
+    tf_name: inherit_ebgp_password_msd_settings
+    description: >-
+      Inherit eBGP password from MSD settings. Applicable only when source and destination fabrics
+      are in the same MSD fabric.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: true
+    example: true
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> defaultVrfEbgpNeighborPassword
+  # Used in: ebgpVrfLite
+  - model_name: defaultVrfEbgpNeighborPassword
+    tf_name: default_vrf_ebgp_neighbor_password
+    description: Default VRF BGP neighbor password.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_defaultVrfEbgpNeighborPassword
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> vpcPeerKeepalive -> templateInputs -> interfaceVrf
+  # Used in: vpcPeerKeepalive, ipfmNumbered
+  # Required in: ipfmNumbered
+  - model_name: interfaceVrf
+    tf_name: interface_vrf
+    description: Interface VRF name.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_interfaceVrf
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> srcVrfName
+  # Used in: layer3DciVrfLite
+  - model_name: srcVrfName
+    tf_name: src_vrf_name
+    description: VRF name in the source fabric, default VRF if not specified.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: myVrf50001
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> dstVrfName
+  # Used in: layer3DciVrfLite
+  - model_name: dstVrfName
+    tf_name: dst_vrf_name
+    description: VRF name in the destination fabric, default VRF if not specified.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: myVrf5000
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> vrfNameNxPeerSwitch
+  # Used in: ebgpVrfLite
+  - model_name: vrfNameNxPeerSwitch
+    tf_name: vrf_name_nx_peer_switch
+    description: >-
+      VRF name in NX-OS peer switch. This field is applied to the edge router when the link is
+      between a border in easy fabric and an edge router in an external fabric. Default VRF is used
+      when blank. The border device always uses default VRF.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_vrfNameNxPeerSwitch
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> autoGenConfigPeer
+  # Used in: ebgpVrfLite, ospfVrfLite
+  # Default: False
+  - model_name: autoGenConfigPeer
+    tf_name: auto_gen_config_peer
+    description: >-
+      Auto-generate configuration for the peer. If enabled, automatically generate VRF Lite
+      configuration for managed NX-OS neighbor devices.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> autoGenConfigDefaultVrf
+  # Used in: ebgpVrfLite
+  # Default: False
+  - model_name: autoGenConfigDefaultVrf
+    tf_name: auto_gen_config_default_vrf
+    description: >-
+      Auto-generate configuration on default VRF. If enabled, automatically generate default VRF
+      configuration over the physical or port-channel interface for a border device in an easy
+      fabric.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> autoGenConfigNxPeerDefaultVrf
+  # Used in: ebgpVrfLite
+  # Default: False
+  - model_name: autoGenConfigNxPeerDefaultVrf
+    tf_name: auto_gen_config_nx_peer_default_vrf
+    description: >-
+      Auto-generate configuration for NX-OS/IOS XE Peer on default VRF. If enabled, automatically
+      generate Default VRF (Global VRF for IOS XE) configuration for managed neighbor devices.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> templateConfigGenPeer
+  # Used in: ebgpVrfLite, ospfVrfLite
+  # Default: Ext_VRF_Lite_Jython
+  - model_name: templateConfigGenPeer
+    tf_name: template_config_gen_peer
+    description: >-
+      Template for configuration generation on the peer. Python template for VRF Lite configuration
+      on NX-OS peer in an external fabric.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    default_value: Ext_VRF_Lite_Jython
+    example: Ext_VRF_Lite_Jython
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> redistribEbgpRouteMapName
+  # Used in: ebgpVrfLite
+  - model_name: redistribEbgpRouteMapName
+    tf_name: redistrib_ebgp_route_map_name
+    description: >-
+      Redistribute BGP route map name. Route-map used to redistribute BGP routes to IGP in default
+      VRF. Applicable only for easy fabric.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_redistribEbgpRouteMapName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> redistributeRouteServer
+  # Used in: multisiteOverlay
+  # Default: False
+  - model_name: redistributeRouteServer
+    tf_name: redistribute_route_server
+    description: Enable redistribute direct on the route server.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> routeServerRoutingTag
+  # Used in: multisiteOverlay
+  - model_name: routeServerRoutingTag
+    tf_name: route_server_routing_tag
+    description: Routing tag associated with the route server IP for redistribute direct.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_routeServerRoutingTag
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> routingTag
+  # Used in: ebgpVrfLite, multisiteUnderlay
+  - model_name: routingTag
+    tf_name: routing_tag
+    description: Routing tag associated with the interface IP for default VRF.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_routingTag
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dciTracking
+  # Used in: ebgpVrfLite
+  # Default: False
+  - model_name: dciTracking
+    tf_name: dci_tracking
+    description: >-
+      Enable DCI tracking on the physical interface on the easy fabric side of this link, if the
+      switch is any type of border gateway.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteUnderlay -> templateInputs -> dciTrackingEnableFlag
+  # Used in: multisiteUnderlay
+  # Default: False
+  - model_name: dciTrackingEnableFlag
+    tf_name: dci_tracking_enable_flag
+    description: DCI tracking enable flag to deploy DCI tracking.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> inheritTtagFabricSetting
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteUnderlay, mplsUnderlay
+  # Default: True
+  - model_name: inheritTtagFabricSetting
+    tf_name: inherit_ttag_fabric_setting
+    description: >-
+      Enable timestamp tagging (ttag/ttag-strip) for DCI interfaces when PTP is enabled in fabric
+      settings.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: true
+    example: true
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> overrideFabricMacsec
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Default: False
+  - model_name: overrideFabricMacsec
+    tf_name: override_fabric_macsec
+    description: >-
+      When true, uses local link-level MACsec settings. When false, settings are inherited from the
+      Fabric Management settings
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> macsecCipherSuite
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: macsecCipherSuite
+    tf_name: macsec_cipher_suite
+    description: MACsec cipher suite.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_macsecCipherSuite
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> macsecPrimaryKeyString
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: macsecPrimaryKeyString
+    tf_name: macsec_primary_key_string
+    description: MACsec primary key string. Cisco Type 7 Encrypted Octet String.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_macsecPrimaryKeyString
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> macsecPrimaryCryptographicAlgorithm
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: macsecPrimaryCryptographicAlgorithm
+    tf_name: macsec_primary_cryptographic_algorithm
+    description: MACsec primary cryptographic algorithm. AES_128_CMAC or AES_256_CMAC.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_macsecPrimaryCryptographicAlgorithm
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> macsecFallbackKeyString
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: macsecFallbackKeyString
+    tf_name: macsec_fallback_key_string
+    description: MACsec fallback key string. Cisco Type 7 Encrypted Octet String.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_macsecFallbackKeyString
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> macsecFallbackCryptographicAlgorithm
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: macsecFallbackCryptographicAlgorithm
+    tf_name: macsec_fallback_cryptographic_algorithm
+    description: MACsec fallback cryptographic algorithm. AES_128_CMAC or AES_256_CMAC.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_macsecFallbackCryptographicAlgorithm
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> qkd
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Default: False
+  - model_name: qkd
+    tf_name: qkd
+    description: Enable MACsec with QKD configuration.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> ignoreCertificate
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Default: False
+  - model_name: ignoreCertificate
+    tf_name: ignore_certificate
+    description: Ignore certificate to skip verification of the incoming certificate.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcKmeServerIp
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: srcKmeServerIp
+    tf_name: src_kme_server_ip
+    description: Source KME server IP. Key Management Entity server IPv4 address.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcKmeServerIp
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcMacsecKeyChainPrefix
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: srcMacsecKeyChainPrefix
+    tf_name: src_macsec_key_chain_prefix
+    description: >-
+      Source MACsec policy/key-chain name prefix. This prefix is used to form policy and key-chain
+      names for MACsec configuration at the source.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcMacsecKeyChainPrefix
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcQkdProfileName
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Max: 63
+  - model_name: srcQkdProfileName
+    tf_name: src_qkd_profile_name
+    description: Source QKD profile name.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcQkdProfileName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> srcTrustpointLabel
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Max: 64
+  - model_name: srcTrustpointLabel
+    tf_name: src_trustpoint_label
+    description: Source trust point label. TLS authentication type trustpoint label.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_srcTrustpointLabel
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstKmeServerIp
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: dstKmeServerIp
+    tf_name: dst_kme_server_ip
+    description: Destination KME server IP. Key Management Entity server IPv4 address.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstKmeServerIp
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstMacsecKeyChainPrefix
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  - model_name: dstMacsecKeyChainPrefix
+    tf_name: dst_macsec_key_chain_prefix
+    description: >-
+      Destination MACsec policy/key-chain name prefix. This prefix is used to form policy and
+      key-chain names for MACsec configuration at the destination.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstMacsecKeyChainPrefix
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstQkdProfileName
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Max: 63
+  - model_name: dstQkdProfileName
+    tf_name: dst_qkd_profile_name
+    description: Destination QKD profile name.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstQkdProfileName
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> ebgpVrfLite -> templateInputs -> dstTrustpointLabel
+  # Used in: ebgpVrfLite, ospfVrfLite, layer3DciVrfLite, multisiteOverlay, vxlanAciEvpnOverlay, layer2Dci
+  # Max: 64
+  - model_name: dstTrustpointLabel
+    tf_name: dst_trustpoint_label
+    description: Destination trust point label. TLS authentication type trustpoint label.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_dstTrustpointLabel
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> dhcpRelayOnSrcInterface
+  # Used in: numbered, unnumbered
+  # Default: False
+  - model_name: dhcpRelayOnSrcInterface
+    tf_name: dhcp_relay_on_src_interface
+    description: Enable DHCP relay on the source interface.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> dhcpRelayOnDstInterface
+  # Used in: numbered, unnumbered
+  # Default: False
+  - model_name: dhcpRelayOnDstInterface
+    tf_name: dhcp_relay_on_dst_interface
+    description: Enable DHCP relay on the destination interface.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> bfdEchoOnSrcInterface
+  # Used in: numbered
+  # Default: False
+  - model_name: bfdEchoOnSrcInterface
+    tf_name: bfd_echo_on_src_interface
+    description: Disable BFD Echo on the source interface. Applicable only when BFD is enabled in the fabric.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> numbered -> templateInputs -> bfdEchoOnDstInterface
+  # Used in: numbered
+  # Default: False
+  - model_name: bfdEchoOnDstInterface
+    tf_name: bfd_echo_on_dst_interface
+    description: Disable BFD Echo on the destination interface. Applicable only when BFD is enabled in the fabric.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer2Dci -> templateInputs -> mtuType
+  # Used in: layer2Dci
+  # Allowed values: ['default', 'jumbo']
+  - model_name: mtuType
+    tf_name: mtu_type
+    description: MTU for the interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: default
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> ipv4Pim
+  # Used in: layer3DciVrfLite
+  # Default: False
+  # tf_name corrected: ipv4pim -> ipv4_pim (per Python class attribute name)
+  - model_name: ipv4Pim
+    tf_name: ipv4_pim
+    description: Enable IPv4 Protocol Independent Multicast.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> ipv4Trm
+  # Used in: multisiteOverlay
+  # Default: False
+  # tf_name corrected: ipv4trm -> ipv4_trm (per Python class attribute name)
+  - model_name: ipv4Trm
+    tf_name: ipv4_trm
+    description: Enable IPv4 tenant routed multicast.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> ipv6Pim
+  # Used in: layer3DciVrfLite
+  # Default: False
+  # tf_name corrected: ipv6pim -> ipv6_pim (per Python class attribute name)
+  - model_name: ipv6Pim
+    tf_name: ipv6_pim
+    description: Enable IPv6 Protocol Independent Multicast.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> ipv6Trm
+  # Used in: multisiteOverlay
+  # Default: False
+  # tf_name corrected: ipv6trm -> ipv6_trm (per Python class attribute name)
+  - model_name: ipv6Trm
+    tf_name: ipv6_trm
+    description: Enable IPv6 tenant routed multicast.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> ipRedirects
+  # Used in: layer3DciVrfLite
+  # Default: False
+  - model_name: ipRedirects
+    tf_name: ip_redirects
+    description: Disable IP redirects.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> multisiteOverlay -> templateInputs -> skipConfigGeneration
+  # Used in: multisiteOverlay
+  # Default: False
+  - model_name: skipConfigGeneration
+    tf_name: skip_config_generation
+    description: Skip configuration generation for the Multisite overlay IFC when enabled
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer2Dci -> templateInputs -> bpduGuard
+  # Used in: layer2Dci
+  # Allowed values: ['enable', 'disable', 'default']
+  - model_name: bpduGuard
+    tf_name: bpdu_guard
+    description: BPDU guard for spanning-tree.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: enable
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer2Dci -> templateInputs -> portTypeFast
+  # Used in: layer2Dci
+  # Default: True
+  - model_name: portTypeFast
+    tf_name: port_type_fast
+    description: Enable spanning-tree edge port behavior.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: true
+    example: true
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer2Dci -> templateInputs -> nativeVlan
+  # Used in: layer2Dci
+  # Min: 1; Max: 4094
+  - model_name: nativeVlan
+    tf_name: native_vlan
+    description: Set native VLAN for the interface.
+    type: Int64
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: 0
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer2Dci -> templateInputs -> trunkAllowedVlans
+  # Used in: layer2Dci
+  - model_name: trunkAllowedVlans
+    tf_name: trunk_allowed_vlans
+    description: >-
+      Trunk allowed VLANs (Allowed values - 'none', 'all', or VLAN ranges (ex-
+      1-200,500-2000,3000)).
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_trunkAllowedVlans
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> netflowOnSrcInterface
+  # Used in: layer3DciVrfLite
+  # Default: False
+  - model_name: netflowOnSrcInterface
+    tf_name: netflow_on_src_interface
+    description: Enable NetFlow on the source interface.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> netflowOnDstInterface
+  # Used in: layer3DciVrfLite
+  # Default: False
+  - model_name: netflowOnDstInterface
+    tf_name: netflow_on_dst_interface
+    description: Enable NetFlow on the destination interface.
+    type: Bool
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    ndfc_type: bool
+    default_value: false
+    example: false
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> srcNetflowMonitorName
+  # Used in: layer3DciVrfLite
+  - model_name: srcNetflowMonitorName
+    tf_name: src_netflow_monitor_name
+    description: Layer 3 Monitor Name to be applied to the source interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: l3-monitor
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> layer3DciVrfLite -> templateInputs -> dstNetflowMonitorName
+  # Used in: layer3DciVrfLite
+  - model_name: dstNetflowMonitorName
+    tf_name: dst_netflow_monitor_name
+    description: Layer 3 Monitor Name to be applied to the destination interface.
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: l3-monitor
+    include_empty: true
+
+  # manage_nd_4.2.1.json -> userDefinedLinkTemplate -> templateInputs -> templateName
+  # Used in: userDefined
+  - model_name: templateName
+    tf_name: template_name
+    description: Name of the user-defined template
+    type: String
+    optional: true
+    ndfc_nested:
+    - configData
+    - templateInputs
+    example: example_templateName
+    include_empty: true
+

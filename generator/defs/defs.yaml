@@ -3,4 +3,5 @@ files:
   - nd.yaml
   - fabric.yaml
   - inventory.yaml
+  - links.yaml
   #- sample.yaml
