@@ -1,0 +1,205 @@
+# API Endpoints:
+#   infra_nd_4.2.1.json:
+#     POST   /clusters                      - Onboard a Nexus Dashboard cluster
+#
+# Onboard ND Cluster Payload (POST /clusters):
+#   {
+#     "spec": {
+#       "clusterType": "ND",                                        # cluster_type
+#       "onboardUrl": "10.15.0.128",                                # hostname
+#       "credentials": {
+#         "user": "admin",                                          # username
+#         "password": "cisco",                                      # password
+#         "loginDomain": "test_sab_nd_login_domain"                 # login_domain
+#       },
+#       "nd": {
+#         "multiClusterLoginDomainName": "test_sab_nd_mcl_domain"   # multi_cluster_login_domain_name
+#       }
+#     }
+#   }
+
+# Response from GET /clusters/{clusterName} for an onboarded ND cluster:
+# {
+#   "spec": {
+#     "aci": {
+#       "orchestration": {},
+#       "telemetry": {}
+#     },
+#     "clusterType": "ND",
+#     "location": {},
+#     "name": "nd421-02",
+#     "onboardUrl": "10.15.0.128"
+#   },
+#   "status": {
+#     "controllers": [
+#       {
+#         "inbandNetwork": {
+#           "ipv4Address": "172.16.187.110"
+#         },
+#         "managementNetwork": {
+#           "ipv4Address": "10.15.0.128"
+#         },
+#         "name": "nd421-02-node01",
+#         "serialNumber": "33D3C81CBF23",
+#         "status": "Up"
+#       }
+#     ],
+#     "lastUpdate": {},
+#     "local": false,
+#     "primaryCluster": false,
+#     "state": "Up",
+#     "version": "4.2.1.10",
+#     "virtual": true
+#   }
+# }
+
+
+# # # terraform state show nd_multi_cluster_connectivity.test_resource_multi_cluster_connectivity_1
+# resource "nd_onboard_nd" "test_resource_multi_cluster_connectivity_1" {
+#     cluster_name               = "nd421-02"
+#     cluster_type               = "ND"
+#     hostname                   = "10.15.0.128"
+#     username                   = "admin"
+#     password                   = (sensitive value)
+#     login_domain               = "test_sab_nd_login_domain"
+#     multi_cluster_login_domain = "test_sab_nd_mcl_domain" # present in the primary cluster "Users and Security -> Authentication"
+# }
+
+
+resource:
+  name: onboard_nd
+  generate_tf_resource: true
+  skip_equality: true
+  attributes:
+
+  - model_name: name
+    tf_name: id
+    description: Terraform resource ID, set to the cluster name for ease of use.
+    type: String
+    computed: true
+    payload_hide: true
+
+  # Schema:  OnboardClusterSpec -> clusterType
+  # Payload: spec -> clusterType
+  # Allowed values: [ND]
+  - model_name: clusterType
+    tf_name: cluster_type
+    description: The cluster type, always ND for this resource
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: ND
+
+
+  - model_name: name
+    tf_name: cluster_name
+    description: IP address or FQDN used to onboard the ND cluster. Using an FQDN will enable cross-launch to this cluster from other ND clusters using an FQDN.
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: nd4
+  # -------------------------------------------------------------------------
+  # Top-level spec attributes
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> onboardUrl
+  # Payload: spec -> onboardUrl
+  # Type: string; Description: IP address or FQDN used to onboard the cluster
+  - model_name: onboardUrl
+    tf_name: hostname
+    description: IP address or FQDN used to onboard the ND cluster. Using an FQDN will enable cross-launch to this cluster from other ND clusters using an FQDN.
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: 10.15.0.128
+
+
+  # -------------------------------------------------------------------------
+  # spec -> credentials
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> user
+  # Payload: spec -> credentials -> user
+  - model_name: user
+    tf_name: username
+    description: Username for authentication with the remote ND cluster
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: admin
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> password
+  # Payload: spec -> credentials -> password
+  - model_name: password
+    tf_name: password
+    description: Password for authentication with the remote ND cluster
+    type: String
+    mandatory: true
+    sensitive: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: cisco
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> loginDomain
+  # Payload: spec -> credentials -> loginDomain
+  - model_name: loginDomain
+    tf_name: login_domain
+    description: Login domain for authentication with the remote ND cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: local
+
+  # -------------------------------------------------------------------------
+  # spec -> location
+  # -------------------------------------------------------------------------
+
+  # # Schema:  OnboardClusterSpec -> location ($ref locationDetails) -> latitude
+  # # Payload: spec -> location -> latitude
+  # # Min: -90; Max: 90
+  # - model_name: latitude
+  #   tf_name: latitude
+  #   description: Latitude in decimal degrees
+  #   type: Float64
+  #   optional: true
+  #   ndfc_nested:
+  #   - spec
+  #   - location
+  #   example: 37.3
+
+  # # Schema:  OnboardClusterSpec -> location ($ref locationDetails) -> longitude
+  # # Payload: spec -> location -> longitude
+  # # Min: -180; Max: 180
+  # - model_name: longitude
+  #   tf_name: longitude
+  #   description: Longitude in decimal degrees
+  #   type: Float64
+  #   optional: true
+  #   ndfc_nested:
+  #   - spec
+  #   - location
+  #   example: -121.8
+
+  # -------------------------------------------------------------------------
+  # spec -> nd (ND-specific configuration)
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> nd ($ref OnboardNDCluster) -> multiClusterLoginDomainName
+  # Payload: spec -> nd -> multiClusterLoginDomainName
+  - model_name: multiClusterLoginDomainName
+    tf_name: multi_cluster_login_domain_name
+    description: When set, ND will create a login domain on the local cluster and the cluster to be registered. The new login domain will enable cross-launch between clusters without an external authentication provider.
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - nd
+    example: test_sab_nd_mcl_domain

@@ -1,0 +1,330 @@
+# API Endpoints:
+#   infra_nd_4.2.1.json:
+#     POST   /clusters                      - Onboard an APIC cluster
+#
+# Onboard ACI Cluster Payload (POST /clusters):
+#   {
+#     "spec": {
+#       "clusterType": "APIC",                                      # cluster_type
+#       "onboardUrl": "10.15.38.241",                               # hostname
+#       "location": {
+#         "latitude": 37.3,                                         # latitude
+#         "longitude": -121.8                                       # longitude
+#       },
+#       "credentials": {
+#         "user": "admin",                                          # username
+#         "password": "cisco",                                      # password
+#         "loginDomain": "test_sab_aci_login_domain"                # login_domain
+#       },
+#       "aci": {
+#         "name": "apic1",                                          # fabric_name
+#         "licenseTier": "essentials",                               # license_tier
+#         "securityDomain": "test_sab_nd_security_domain",          # security_domain
+#         "verifyCA": true,                                         # validate_peer_certificate
+#         "orchestration": { "status": "disabled" },                # orchestration
+#         "telemetry": {
+#           "status": "disabled",                                   # status
+#           "network": "inband",                                    # telemetry_network
+#           "epg": "epg_dn",                                        # inband_epg_dn
+#           "streamingProtocol": "ipv4"                             # telemetry_streaming_protocol
+#         }
+#       }
+#     }
+#   }
+
+
+
+
+# # # terraform state show nd_multi_cluster_connectivity.test_resource_multi_cluster_connectivity_apic1
+# resource "nd_onboard_aci" "test_resource_multi_cluster_connectivity_apic1" {
+#     cluster_name                 = "apic1" # same as fabric_name
+#     cluster_type                 = "APIC"
+#     hostname                     = "10.15.38.241"
+#     username                     = "admin"
+#     password                     = (sensitive value)
+#     login_domain                 = "test_sab_aci_login_domain" # present in the APIC "Admin -> Authentication -> Login Domains"
+#     validate_peer_certificate    = true
+#     license_tier                 = "essentials"
+#     latitude                     = 37.3
+#     longitude                    = -121.8
+#     features                     = ["telemetry", "orchestration"]
+#     inband_epg_dn                   = "test_epg_dn"
+#     telemetry_streaming_protocol = "ipv4" or "ipv6"
+#     telemetry_network            = "inband" or "outband"
+#     security_domain              = "test_sab_nd_security_domain" # present in the primary cluster "Users and Security -> Security -> Security domain"
+# }
+
+
+
+# esfsd
+# # # terraform state show nd_multi_cluster_connectivity.test_resource_multi_cluster_connectivity_apic1
+# resource "nd_onboard_aci" "test_resource_multi_cluster_connectivity_apic1" {
+#     features                     = ["telemetry", "orchestration"]
+# }
+
+
+
+
+resource:
+  name: onboard_aci
+  generate_tf_resource: true
+  skip_equality: true
+  attributes:
+
+
+
+  - model_name: name
+    tf_name: id
+    description: Terraform resource ID, set to the cluster name for ease of use.
+    type: String
+    computed: true
+    payload_hide: true
+
+
+  - model_name: name
+    tf_name: cluster_name
+    description: IP address or FQDN used to onboard the APIC cluster. Using an FQDN will enable cross-launch to this cluster from other APIC clusters using an FQDN.
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: nd4
+
+  # -------------------------------------------------------------------------
+  # Top-level spec attributes
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> onboardUrl
+  # Payload: spec -> onboardUrl
+  # Type: string; Description: IP address or FQDN used to onboard the cluster
+  - model_name: onboardUrl
+    tf_name: hostname
+    description: IP address or FQDN used to onboard the APIC cluster
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: 10.15.38.241
+
+  # Schema:  OnboardClusterSpec -> clusterType
+  # Payload: spec -> clusterType
+  # Allowed values: [APIC]
+  - model_name: clusterType
+    tf_name: cluster_type
+    description: The cluster type, always APIC for this resource
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    example: APIC
+
+
+
+
+
+  # -------------------------------------------------------------------------
+  # spec -> credentials
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> user
+  # Payload: spec -> credentials -> user
+  - model_name: user
+    tf_name: username
+    description: Username for authentication with the APIC cluster
+    type: String
+    mandatory: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: admin
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> password
+  # Payload: spec -> credentials -> password
+  - model_name: password
+    tf_name: password
+    description: Password for authentication with the APIC cluster
+    type: String
+    mandatory: true
+    sensitive: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: cisco
+
+  # Schema:  OnboardClusterSpec -> credentials ($ref clusterCredentials) -> loginDomain
+  # Payload: spec -> credentials -> loginDomain
+  - model_name: loginDomain
+    tf_name: login_domain
+    description: Login domain for authentication with the APIC cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: test_sab_aci_login_domain
+
+  # -------------------------------------------------------------------------
+  # spec -> location
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> location ($ref locationDetails) -> latitude
+  # Payload: spec -> location -> latitude
+  # Min: -90; Max: 90
+  - model_name: latitude
+    tf_name: latitude
+    description: Latitude in decimal degrees
+    type: Float64
+    optional: true
+    ndfc_nested:
+    - spec
+    - location
+    example: 37.3
+
+  # Schema:  OnboardClusterSpec -> location ($ref locationDetails) -> longitude
+  # Payload: spec -> location -> longitude
+  # Min: -180; Max: 180
+  - model_name: longitude
+    tf_name: longitude
+    description: Longitude in decimal degrees
+    type: Float64
+    optional: true
+    ndfc_nested:
+    - spec
+    - location
+    example: -121.8
+
+  # -------------------------------------------------------------------------
+  # spec -> aci (APIC-specific configuration)
+  # -------------------------------------------------------------------------
+
+  # # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> name
+  # # Payload: spec -> aci -> name
+  # # Pattern: ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?$
+  # - model_name: name
+  #   tf_name: fabric_name
+  #   description: Name used for this ACI fabric
+  #   type: String
+  #   optional: true
+  #   ndfc_nested:
+  #   - spec
+  #   - aci
+  #   example: apic1
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> licenseTier
+  # Payload: spec -> aci -> licenseTier
+  # Default: essentials; Allowed values: [essentials, advantage, premier]
+  - model_name: licenseTier
+    tf_name: license_tier
+    description: Tier of license to be used with this fabric on this cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    example: essentials
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> securityDomain
+  # Payload: spec -> aci -> securityDomain
+  - model_name: securityDomain
+    tf_name: security_domain
+    description: Security domain access for the APIC cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    example: test_sab_nd_security_domain
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> verifyCA
+  # Payload: spec -> aci -> verifyCA
+  - model_name: verifyCA
+    tf_name: validate_peer_certificate
+    description: Verify APIC CA using one of the trusted CAs configured on the Nexus Dashboard
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    example: true
+
+  # -------------------------------------------------------------------------
+  # spec -> aci -> orchestration
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> orchestration ($ref APICOrchestration) -> status
+  # Payload: spec -> aci -> orchestration -> status
+  # Default: disabled; Allowed values: [enabled, disabled]
+  - model_name: status
+    tf_name: orchestration_status
+    description: Desired status of the orchestration feature for APIC cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    - orchestration
+    example: disabled
+
+  # -------------------------------------------------------------------------
+  # spec -> aci -> telemetry
+  # -------------------------------------------------------------------------
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> telemetry ($ref APICTelemetry) -> status
+  # Payload: spec -> aci -> telemetry -> status
+  # Default: disabled; Allowed values: [enabled, disabled]
+  - model_name: status
+    tf_name: telemetry_status
+    description: Desired status of the telemetry feature for APIC cluster
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: disabled
+
+
+
+
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> telemetry ($ref APICTelemetry) -> network
+  # Payload: spec -> aci -> telemetry -> network
+  # Default: inband; Allowed values: [inband, outOfBand]
+  - model_name: network
+    tf_name: telemetry_network
+    description: Desired connectivity for network traffic (telemetry)
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: inband
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> telemetry ($ref APICTelemetry) -> epg
+  # Payload: spec -> aci -> telemetry -> epg
+  - model_name: epg
+    tf_name: inband_epg_dn
+    description: APIC End Point Group (EPG) Distinguished Name (DN) for telemetry
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: epg_dn
+
+  # Schema:  OnboardClusterSpec -> aci ($ref OnboardAPICCluster) -> telemetry ($ref APICTelemetry) -> streamingProtocol
+  # Payload: spec -> aci -> telemetry -> streamingProtocol
+  # Default: ipv4; Allowed values: [ipv4, ipv6]
+  - model_name: streamingProtocol
+    tf_name: telemetry_streaming_protocol
+    description: Telemetry Streaming Protocol
+    type: String
+    optional: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: ipv4
