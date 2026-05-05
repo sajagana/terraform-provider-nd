@@ -4,4 +4,5 @@ files:
   # - fabric.yaml
   # - inventory.yaml
   - multi_cluster_connectivity.yaml
+  - multi_cluster_connectivity_aci.yaml
   #- sample.yaml

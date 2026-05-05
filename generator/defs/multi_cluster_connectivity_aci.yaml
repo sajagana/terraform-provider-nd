@@ -1,0 +1,643 @@
+# Sample API payload to onboard an APIC (ACI) cluster
+# POST /api/v1/infra/clusters
+#
+# Inband telemetry variant:
+# {
+#   "spec": {
+#     "clusterType": "APIC",
+#     "onboardUrl": "10.195.219.153:443",
+#     "location": { "latitude": 10.2, "longitude": 10.1 },
+#     "credentials": {
+#       "user": "admin",
+#       "password": "Q2lzY29pbnMzOTY1IQ==",
+#       "loginDomain": "DefaultAuth"
+#     },
+#     "aci": {
+#       "name": "ins15-apic1",
+#       "licenseTier": "premier",
+#       "securityDomain": "all",
+#       "verifyCA": false,
+#       "orchestration": { "status": "enabled" },
+#       "telemetry": {
+#         "status": "enabled",
+#         "network": "inband",
+#         "streamingProtocol": "ipv4",
+#         "epg": "uni/tn-mgmt/mgmtp-default/inb-default"
+#       }
+#     }
+#   }
+# }
+#
+# Out-of-band telemetry variant (epg not required when network=outOfBand):
+# {
+#   "spec": {
+#     "clusterType": "APIC",
+#     "onboardUrl": "10.195.219.154:443",
+#     "location": { "latitude": 37.3, "longitude": -121.8 },
+#     "credentials": {
+#       "user": "admin",
+#       "password": "Y2lzY28uMTIz",
+#       "loginDomain": "DefaultAuth"
+#     },
+#     "aci": {
+#       "name": "ins15-apic2",
+#       "licenseTier": "advantage",
+#       "securityDomain": "all",
+#       "verifyCA": true,
+#       "orchestration": { "status": "disabled" },
+#       "telemetry": {
+#         "status": "enabled",
+#         "network": "outOfBand",
+#         "streamingProtocol": "ipv6"
+#       }
+#     }
+#   }
+# }
+#
+# ---------------------------------------------------------------------------
+# Sample API payloads to onboard an APIC (ACI) fabric via the Manage API
+# (derived from manage_nd_4.2.1.json).
+# POST /api/v1/manage/fabrics    (PUT /api/v1/manage/fabrics/{fabricName} for update)
+#
+# Schemas (allOf composition for category="fabric" + management.type="aci"):
+#   - baseProperties             (name [required])
+#   - fabricProperties           (location, licenseTier, alertSuspend,
+#                                 telemetryCollection, telemetryCollectionType,
+#                                 telemetryStreamingProtocol,
+#                                 telemetrySourceInterface, telemetrySourceVrf,
+#                                 securityDomain)
+#   - managementSettings.aci     (fabricProperties + aciProperties; type="aci")
+#   - aciProperties              (onboardUrl, orchestration [bool], epg,
+#                                 trapForwarder, snmpV3AuthProtocol,
+#                                 username, password)
+#   - telemetrySettings          (nested telemetrySettings: flowCollection,
+#                                 microburst, analysisSettings, nas,
+#                                 energyManagement)
+#   - externalStreamingSettings  (nested externalStreamingSettings: email[],
+#                                 syslog, messageBus[], webhooks[])
+#
+# In-band telemetry variant (telemetry collected over the in-band network;
+# epg is required when telemetryCollectionType=inBand):
+# {
+#   "category": "fabric",
+#   "name": "ins15-apic1",
+#   "location": { "latitude": 10.2, "longitude": 10.1 },
+#   "licenseTier": "premier",
+#   "alertSuspend": "disabled",
+#   "telemetryCollection": true,
+#   "telemetryCollectionType": "inBand",
+#   "telemetryStreamingProtocol": "ipv4",
+#   "telemetrySourceInterface": "loopback0",
+#   "telemetrySourceVrf": "default",
+#   "securityDomain": "all",
+#   "management": {
+#     "type": "aci",
+#     "onboardUrl": "https://10.195.219.153",
+#     "orchestration": true,
+#     "epg": "uni/tn-mgmt/mgmtp-default/inb-default",
+#     "trapForwarder": false,
+#     "snmpV3AuthProtocol": "sha",
+#     "username": "admin",
+#     "password": "Q2lzY29pbnMzOTY1IQ=="
+#   },
+#   "telemetrySettings": {
+#     "flowCollection": {},
+#     "microburst": {},
+#     "analysisSettings": {},
+#     "nas": {},
+#     "energyManagement": {}
+#   },
+#   "externalStreamingSettings": {
+#     "email": [],
+#     "syslog": { "facility": "", "servers": [],
+#                 "collectionSettings": { "anomalies": [] } },
+#     "messageBus": [],
+#     "webhooks": []
+#   }
+# }
+#
+# Out-of-band telemetry variant (epg, telemetrySourceInterface and
+# telemetrySourceVrf are not required when telemetryCollectionType=outOfBand):
+# {
+#   "category": "fabric",
+#   "name": "ins15-apic2",
+#   "location": { "latitude": 37.3, "longitude": -121.8 },
+#   "licenseTier": "advantage",
+#   "alertSuspend": "disabled",
+#   "telemetryCollection": true,
+#   "telemetryCollectionType": "outOfBand",
+#   "telemetryStreamingProtocol": "ipv6",
+#   "securityDomain": "all",
+#   "management": {
+#     "type": "aci",
+#     "onboardUrl": "https://10.195.219.154",
+#     "orchestration": false,
+#     "trapForwarder": true,
+#     "snmpV3AuthProtocol": "md5",
+#     "username": "admin",
+#     "password": "Y2lzY28uMTIz"
+#   }
+# }
+#
+# Update an existing ACI fabric (orchestration is supported on PUT):
+# PUT /api/v1/manage/fabrics/{fabricName}
+# Body: same baseFabric schema as POST. Example to toggle orchestration on:
+# {
+#   "category": "fabric",
+#   "name": "ins15-apic1",
+#   "licenseTier": "premier",
+#   "securityDomain": "all",
+#   "telemetryCollection": true,
+#   "telemetryCollectionType": "inBand",
+#   "telemetryStreamingProtocol": "ipv4",
+#   "management": {
+#     "type": "aci",
+#     "onboardUrl": "https://10.195.219.153",
+#     "orchestration": true,
+#     "epg": "uni/tn-mgmt/mgmtp-default/inb-default",
+#     "trapForwarder": false,
+#     "username": "admin",
+#     "password": "Q2lzY29pbnMzOTY1IQ=="
+#   }
+# }
+#
+# Re-register an already onboarded ACI fabric (separate endpoint):
+# POST /api/v1/manage/fabrics/{fabricName}/actions/reRegister
+# Schema: reRegisterFabric -> reRegisterSettings.reRegister -> aciReRegister
+# {
+#   "reRegister": {
+#     "type": "aci",
+#     "onboardUrl": "https://172.28.8.143",
+#     "verifyCA": true,
+#     "credentials": {
+#       "user": "admin",
+#       "password": "passwordoftheuser",
+#       "loginDomain": "default"
+#     }
+#   }
+# }
+
+
+resource:
+  name: multi_cluster_connectivity_aci
+  generate_tf_resource: true
+  skip_equality: true
+  attributes:
+  - model_name: name
+    tf_name: id
+    description: The unique identifier of the terraform resource.
+    type: String
+    computed: true
+    payload_hide: true
+
+  # Schema:  OnboardClusterSpec.clusterType
+  # Payload: spec.clusterType
+  # String, enum [ND, APIC]; auto-filled as "APIC" for this resource
+  # Used in: POST
+  - model_name: clusterType
+    tf_name: cluster_type
+    description: The type of the cluster. The value will be auto filled as "APIC" for this resource.
+    type: String
+    optional: true
+    default_value: APIC
+    ndfc_nested:
+    - spec
+    example: APIC
+
+  # Schema:  ClusterSpec.name
+  # Payload: spec.name (returned in GET; not sent in POST body)
+  # String; populated by the controller after onboarding
+  # Used in: GET
+  - model_name: name
+    tf_name: cluster_name
+    description: The name of the APIC cluster as reported by the controller.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    example: ins15-apic1
+
+  # Schema:  OnboardClusterSpec.onboardUrl ($ref onboardUrl)
+  # Payload: spec.onboardUrl
+  # String, required; APIC IP/hostname, optional ":port" suffix
+  # Used in: POST, PUT, GET
+  # GUI label: "Host Name/IP Address" (Connect Cluster > Settings)
+  - model_name: onboardUrl
+    tf_name: host_name
+    description: |
+      The IP address used to communicate with the Cisco ACI cluster. Corresponds
+      to the "Host Name/IP Address" field in the Nexus Dashboard "Connect Cluster"
+      workflow. Do not include the protocol (http:// or https://) as part of the
+      value or fabric onboarding will fail. An optional ":port" suffix is supported.
+    type: String
+    mandatory: true
+    tf_requires_replace: true
+    ndfc_nested:
+    - spec
+    example: 10.195.219.153:443
+
+  # Schema:  clusterCredentials.user
+  # Payload: spec.credentials.user
+  # String, required; APIC username
+  # Used in: POST, PUT, DELETE (APIC only); never returned in GET
+  # GUI label: "User Name" (Connect Cluster > Settings)
+  - model_name: user
+    tf_name: user_name
+    description: |
+      Login user name with admin privileges on the ACI fabric being added.
+      Corresponds to the "User Name" field in the Nexus Dashboard "Connect Cluster"
+      workflow. The credentials are used once when first establishing connectivity
+      to the cluster; all subsequent communication uses provisioned secure keys.
+    type: String
+    mandatory: true
+    sensitive: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: admin
+
+  # Schema:  clusterCredentials.password
+  # Payload: spec.credentials.password
+  # String, required; APIC password (base64-encoded on the wire)
+  # Used in: POST, PUT, DELETE (APIC only); never returned in GET
+  # GUI label: "Password" (Connect Cluster > Settings)
+  - model_name: password
+    tf_name: password
+    description: |
+      Login password for the user name with admin privileges on the ACI fabric
+      being added. Corresponds to the "Password" field in the Nexus Dashboard
+      "Connect Cluster" workflow.
+    type: String
+    mandatory: true
+    sensitive: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: Q2lzY29pbnMzOTY1IQ==
+
+  # Schema:  clusterCredentials.loginDomain
+  # Payload: spec.credentials.loginDomain
+  # String, optional; e.g. "DefaultAuth", "local", or a remote auth domain
+  # Used in: POST, PUT, DELETE (APIC only); never returned in GET
+  # GUI label: "Login Domain" (Connect Cluster > Settings, optional)
+  - model_name: loginDomain
+    tf_name: login_domain
+    description: |
+      The login domain to use when authenticating with the ACI fabric.
+      Corresponds to the optional "Login Domain" field in the Nexus Dashboard
+      "Connect Cluster" workflow. If left empty, the fabric's local login is used.
+    type: String
+    computed: true
+    optional: true
+    use_state: true
+    sensitive: true
+    ndfc_nested:
+    - spec
+    - credentials
+    example: DefaultAuth
+
+  # Schema:  locationDetails.latitude
+  # Payload: spec.location.latitude
+  # Number (float), optional; geolocation latitude of the cluster
+  # Used in: POST, PUT, GET
+  # GUI label: "Location" latitude component (Connect Cluster > Onboard fabric)
+  - model_name: latitude
+    tf_name: latitude
+    description: |
+      Geolocation latitude of the ACI fabric. Part of the "Location" selection
+      shown in the Nexus Dashboard "Connect Cluster" workflow.
+    type: Float64
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    - location
+    example: 10.2
+
+  # Schema:  locationDetails.longitude
+  # Payload: spec.location.longitude
+  # Number (float), optional; geolocation longitude of the cluster
+  # Used in: POST, PUT, GET
+  # GUI label: "Location" longitude component (Connect Cluster > Onboard fabric)
+  - model_name: longitude
+    tf_name: longitude
+    description: |
+      Geolocation longitude of the ACI fabric. Part of the "Location" selection
+      shown in the Nexus Dashboard "Connect Cluster" workflow.
+    type: Float64
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    - location
+    example: 10.1
+
+  # Schema:  OnboardAPICCluster.name
+  # Payload: spec.aci.name
+  # String, optional on POST; not present on PUT/GET (returned as spec.name instead)
+  # Used in: POST
+  # GUI label: "Fabric Name" (Connect Cluster > Onboard fabric)
+  - model_name: name
+    tf_name: fabric_name
+    description: |
+      A unique name assigned to the ACI fabric. Corresponds to the "Fabric Name"
+      field in the Nexus Dashboard "Connect Cluster" workflow. This value is set
+      only at onboarding time and cannot be changed in place.
+    type: String
+    optional: true
+    tf_requires_replace: true
+    ndfc_nested:
+    - spec
+    - aci
+    example: ins15-apic1
+
+  # Schema:  EditAPICCluster.licenseTier
+  # Payload: spec.aci.licenseTier
+  # String, optional; enum [essentials, advantage, premier]; default "essentials"
+  # Used in: POST, PUT, GET
+  # GUI label: "License tier" (Connect Cluster > Onboard fabric)
+  - model_name: licenseTier
+    tf_name: license_tier
+    description: |
+      The licensing tier to be used with this ACI fabric. Corresponds to the
+      "License tier" field in the Nexus Dashboard "Connect Cluster" workflow.
+      Allowed values: "essentials", "advantage", "premier".
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    default_value: essentials
+    valid_values: [essentials, advantage, premier]
+    ndfc_nested:
+    - spec
+    - aci
+    example: premier
+
+  # Schema:  EditAPICCluster.securityDomain
+  # Payload: spec.aci.securityDomain
+  # String, optional; APIC security domain access (e.g. "all")
+  # Used in: POST, PUT, GET
+  # GUI label: "Security domain" (Connect Cluster > Onboard fabric)
+  - model_name: securityDomain
+    tf_name: security_domain
+    description: |
+      The security domain used for access control on the ACI fabric. Corresponds
+      to the "Security domain" field in the Nexus Dashboard "Connect Cluster"
+      workflow. Only users with the "all" security domain access can add or
+      delete ACI clusters.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    - aci
+    example: all
+
+  # Schema:  EditAPICCluster.verifyCA
+  # Payload: spec.aci.verifyCA
+  # Boolean, optional; verify APIC CA against trusted CAs configured on this host
+  # Used in: POST, PUT, GET
+  # GUI label: "Validate peer certificate" (Connect Cluster > Settings)
+  - model_name: verifyCA
+    tf_name: validate_peer_certificate
+    description: |
+      Allows Nexus Dashboard to verify that the certificates of hosts to which it
+      connects (such as fabric controllers) are valid and are signed by a trusted
+      Certificate Authority (CA). Corresponds to the "Validate peer certificate"
+      field in the Nexus Dashboard "Connect Cluster" workflow. The certificate
+      for the fabric must already be imported into Nexus Dashboard before
+      enabling this option, otherwise fabric onboarding will fail.
+    type: Bool
+    optional: true
+    computed: true
+    use_state: true
+    default_value: false
+    ndfc_nested:
+    - spec
+    - aci
+    example: false
+
+  # Schema:  APICOrchestration.status
+  # Payload: spec.aci.orchestration.status
+  # String, optional; enum [enabled, disabled]; default "disabled"
+  # Used in: POST, PUT, GET
+  # GUI: "Cisco ACI in Nexus Dashboard Orchestration" feature toggle
+  - model_name: status
+    tf_name: enable_orchestration
+    description: |
+      Enables or disables Cisco ACI in Nexus Dashboard Orchestration on this
+      ACI fabric. When enabled, Nexus Dashboard can deploy tenants, networks,
+      and policy configurations across multiple ACI sites. Allowed values:
+      "enabled", "disabled". Note: Orchestration cannot be enabled on an ACI
+      fabric that is a member of a VXLAN-ACI fabric group.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    default_value: disabled
+    valid_values: [enabled, disabled]
+    ndfc_nested:
+    - spec
+    - aci
+    - orchestration
+    example: enabled
+
+  # Schema:  APICTelemetry.status
+  # Payload: spec.aci.telemetry.status
+  # String, optional; enum [enabled, disabled]; default "disabled"
+  # Used in: POST, PUT, GET
+  # GUI label: "Enable telemetry" (Connect Cluster > Onboard fabric)
+  - model_name: status
+    tf_name: enable_telemetry
+    description: |
+      Enables or disables Telemetry for the ACI fabric. Corresponds to the
+      "Enable telemetry" checkbox in the Nexus Dashboard "Connect Cluster"
+      workflow. This is the equivalent of enabling the Nexus Dashboard Insights
+      service in previous releases. Allowed values: "enabled", "disabled".
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    default_value: disabled
+    valid_values: [enabled, disabled]
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: enabled
+
+  # Schema:  APICTelemetry.network
+  # Payload: spec.aci.telemetry.network
+  # String, optional; enum [inband, outOfBand]; default "inband"
+  # Used in: POST, PUT, GET
+  # GUI label: "Telemetry collection" (Connect Cluster > Onboard fabric);
+  # GUI choices "In-band" and "Out-of-band" map to API values "inband" and "outOfBand".
+  - model_name: network
+    tf_name: telemetry_collection
+    description: |
+      The connectivity used for telemetry collection on the ACI fabric.
+      Corresponds to the "Telemetry collection" choice in the Nexus Dashboard
+      "Connect Cluster" workflow. Allowed values: "inband" (GUI: "In-band") or
+      "outOfBand" (GUI: "Out-of-band"). Regardless of the option chosen,
+      reachability to the ACI IP address must be through the Nexus Dashboard
+      data interface. Available only when telemetry is enabled.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    default_value: inband
+    valid_values: [inband, outOfBand]
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: inband
+
+  # Schema:  APICTelemetry.streamingProtocol ($ref telemetryStreamingProtocol)
+  # Payload: spec.aci.telemetry.streamingProtocol
+  # String, optional; e.g. "ipv4" / "ipv6"
+  # Used in: POST, PUT, GET
+  # GUI label: "Telemetry streaming" (Connect Cluster > Onboard fabric);
+  # GUI choices "IPv4" and "IPv6" map to API values "ipv4" and "ipv6".
+  - model_name: streamingProtocol
+    tf_name: telemetry_streaming
+    description: |
+      The streaming protocol used for ACI telemetry. Corresponds to the
+      "Telemetry streaming" choice in the Nexus Dashboard "Connect Cluster"
+      workflow. Allowed values: "ipv4" (GUI: "IPv4") or "ipv6" (GUI: "IPv6").
+      Available only when telemetry is enabled.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: ipv4
+
+  # Schema:  APICTelemetry.epg
+  # Payload: spec.aci.telemetry.epg
+  # String, conditional; required when telemetry_collection = "inband";
+  # APIC End Point Group (EPG) Distinguished Name (DN)
+  # Used in: POST, PUT, GET
+  - model_name: epg
+    tf_name: telemetry_epg
+    description: |
+      The APIC End Point Group (EPG) Distinguished Name (DN) used for telemetry
+      collection on the in-band management network. Required when
+      telemetry_collection is "inband". Available only when telemetry is enabled.
+    type: String
+    optional: true
+    computed: true
+    use_state: true
+    ndfc_nested:
+    - spec
+    - aci
+    - telemetry
+    example: uni/tn-mgmt/mgmtp-default/inb-default
+
+
+
+
+
+# Onboard ACI cluster using Infra:
+# curl 'https://10.15.0.146/api/v1/infra/clusters' \
+#   -X 'POST' \
+#   -H 'x-csrf-token: 1df9b44844744a919131ad7410100c7b1f5a20ad135e467398f8cd015ab631b5' \
+#   --data-raw '{"spec":{"clusterType":"APIC","onboardUrl":"10.15.39.241","location":{"latitude":37.3,"longitude":-121.8},"credentials":{"user":"admin","password":"cisco.123","logindomain":""},"aci":{"name":"apic1","licenseTier":"essentials","telemetry":{"status":"disabled"},"securityDomain":"","verifyCA":false}}}' \
+#   --insecure
+
+# {
+#   "spec": {
+#     "clusterType": "APIC",
+#     "onboardUrl": "10.15.39.241",
+#     "location": {
+#       "latitude": 37.3,
+#       "longitude": -121.8
+#     },
+#     "credentials": {
+#       "user": "admin",
+#       "password": "cisco.123",
+#       "logindomain": ""
+#     },
+#     "aci": {
+#       "name": "apic1",
+#       "licenseTier": "essentials",
+#       "telemetry": {
+#         "status": "disabled"
+#       },
+#       "securityDomain": "",
+#       "verifyCA": false
+#     }
+#   }
+# }
+
+# Remove ACI cluster using Infra:
+# curl 'https://10.15.0.146/api/v1/infra/clusters/apic1/remove' \
+#   -X 'POST' \
+#   -H 'x-csrf-token: 1df9b44844744a919131ad7410100c7b1f5a20ad135e467398f8cd015ab631b5' \
+#   --data-raw '{"credentials":{"user":"admin","password":"cisco.123","loginDomain":""}}' \
+#   --insecure
+
+# {
+#   "credentials": {
+#     "user": "admin",
+#     "password": "cisco.123",
+#     "loginDomain": ""
+#   }
+# }
+
+# Edit ACI cluster using Manage:
+#   curl 'https://10.15.0.146/api/v1/manage/fabrics/apic1' \
+#   -X 'PUT' \
+#   -H 'x-csrf-token: 1df9b44844744a919131ad7410100c7b1f5a20ad135e467398f8cd015ab631b5' \
+#   --data-raw '{"category":"fabric","name":"apic1","licenseTier":"premier","securityDomain":"all","telemetryCollection":true,"telemetryCollectionType":"outOfBand","telemetryStreamingProtocol":"ipv4","location":{"latitude":37.3,"longitude":-121.8},"management":{"nvPairs":{},"type":"aci","orchestration":false,"trapForwarder":false},"telemetrySettings":{"flowCollection":{"flowCollectionModes":{"flowTelemetry":false,"sFlow":false,"netFlow":false},"flowRules":{"vrfFlowRules":[],"interfaceFlowRules":[],"l3OutFlowRules":[]},"udpCategorization":"disabled","trafficAnalyticsRules":{"enabled":false,"interfaceRules":[]}},"sustainability":{},"analysisSettings":{},"microBurst":{}}}' \
+#   --insecure
+
+# {
+#   "category": "fabric",
+#   "name": "apic1",
+#   "licenseTier": "premier",
+#   "securityDomain": "all",
+#   "telemetryCollection": true,
+#   "telemetryCollectionType": "outOfBand",
+#   "telemetryStreamingProtocol": "ipv4",
+#   "location": {
+#     "latitude": 37.3,
+#     "longitude": -121.8
+#   },
+#   "management": {
+#     "nvPairs": {},
+#     "type": "aci",
+#     "orchestration": false,
+#     "trapForwarder": false
+#   },
+#   "telemetrySettings": {
+#     "flowCollection": {
+#       "flowCollectionModes": {
+#         "flowTelemetry": false,
+#         "sFlow": false,
+#         "netFlow": false
+#       },
+#       "flowRules": {
+#         "vrfFlowRules": [],
+#         "interfaceFlowRules": [],
+#         "l3OutFlowRules": []
+#       },
+#       "udpCategorization": "disabled",
+#       "trafficAnalyticsRules": {
+#         "enabled": false,
+#         "interfaceRules": []
+#       }
+#     },
+#     "sustainability": {},
+#     "analysisSettings": {},
+#     "microBurst": {}
+#   }
+# }
