@@ -19,6 +19,7 @@ import (
 	"text/template"
 	"time"
 
+	"terraform-provider-nd/internal/infra/resource_multi_cluster_connectivity"
 	"terraform-provider-nd/internal/manage/resource_fabric_vxlan"
 	"terraform-provider-nd/internal/manage/resource_inventory_switch"
 )
@@ -124,6 +125,14 @@ func GetTFConfigWithSingleResource(tt string, cfg map[string]string, rscs []inte
 			err = t.ExecuteTemplate(&output, "ND_FABRIC_VXLAN_RSC", args)
 			if err != nil {
 				panic(fmt.Sprintf("Failed to execute ND_FABRIC_VXLAN_RSC template: %v", err))
+			}
+
+		case *resource_multi_cluster_connectivity.NDFCMultiClusterConnectivityModel:
+			args["MultiClusterConnectivity"] = v
+			args["RscName"] = rscName
+			err = t.ExecuteTemplate(&output, "ND_MULTI_CLUSTER_CONNECTIVITY_RSC", args)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to execute ND_MULTI_CLUSTER_CONNECTIVITY_RSC template: %v", err))
 			}
 
 		case *resource_inventory_switch.NDFCInventorySwitchModel:

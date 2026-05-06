@@ -24,16 +24,29 @@ type Config struct {
 
 // NDConfig represents the ND controller configuration
 type NDConfig struct {
-	URL             string           `yaml:"url"`
-	User            string           `yaml:"user"`
-	Password        string           `yaml:"pwd"`
-	Insecure        string           `yaml:"insecure"`
-	Fabric          string           `yaml:"fabric"`
-	Switches        []string         `yaml:"switches"`
-	SwitchIP        []string         `yaml:"switch_ip"`
-	FabricPrefix    string           `yaml:"fabric_prefix"`
-	IntegrationTest IntegratedConfig `yaml:"integration_test"`
-	Inventory       InventoryConfig  `yaml:"inventory"`
+	URL             string                         `yaml:"url"`
+	User            string                         `yaml:"user"`
+	Password        string                         `yaml:"pwd"`
+	Insecure        string                         `yaml:"insecure"`
+	Fabric          string                         `yaml:"fabric"`
+	Switches        []string                       `yaml:"switches"`
+	SwitchIP        []string                       `yaml:"switch_ip"`
+	FabricPrefix    string                         `yaml:"fabric_prefix"`
+	IntegrationTest IntegratedConfig               `yaml:"integration_test"`
+	Inventory       InventoryConfig                `yaml:"inventory"`
+	MultiCluster    MultiClusterConnectivityConfig `yaml:"multi_cluster_connectivity"`
+}
+
+// MultiClusterConnectivityConfig represents the multi cluster connectivity
+// (ND) test configuration.
+type MultiClusterConnectivityConfig struct {
+	ClusterName             string `yaml:"cluster_name"`
+	ClusterType             string `yaml:"cluster_type"`
+	Hostname                string `yaml:"hostname"`
+	Username                string `yaml:"username"`
+	Password                string `yaml:"pwd"`
+	LoginDomain             string `yaml:"login_domain"`
+	MultiClusterLoginDomain string `yaml:"multi_cluster_login_domain"`
 }
 
 // InventoryConfig represents the inventory-specific test configuration

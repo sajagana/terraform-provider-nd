@@ -1,0 +1,27 @@
+{{define "ND_MULTI_CLUSTER_CONNECTIVITY_RSC"}}
+resource "nd_multi_cluster_connectivity" "{{.RscName}}" {
+{{with .MultiClusterConnectivity}}
+    {{- if .Spec.ClusterName}}
+    cluster_name = "{{.Spec.ClusterName}}"
+    {{- end}}
+    {{- if .Spec.ClusterType}}
+    cluster_type = "{{.Spec.ClusterType}}"
+    {{- end}}
+    {{- if .Spec.Hostname}}
+    hostname = "{{.Spec.Hostname}}"
+    {{- end}}
+    {{- if .Spec.Credentials.Username}}
+    username = "{{.Spec.Credentials.Username}}"
+    {{- end}}
+    {{- if .Spec.Credentials.Password}}
+    password = "{{.Spec.Credentials.Password}}"
+    {{- end}}
+    {{- if .Spec.Credentials.LoginDomain}}
+    login_domain = "{{.Spec.Credentials.LoginDomain}}"
+    {{- end}}
+    {{- if .Spec.Nd.MultiClusterLoginDomain}}
+    multi_cluster_login_domain = "{{.Spec.Nd.MultiClusterLoginDomain}}"
+    {{- end}}
+{{end}}
+}
+{{end}}
