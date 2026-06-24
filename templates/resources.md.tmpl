@@ -1,0 +1,98 @@
+---
+subcategory: "{{ .Resource.DocCategory }}"
+layout: "nd"
+page_title: "ND: {{ .Resource.ResourceName }}"
+sidebar_current: "docs-nd-resource-{{ .Resource.ResourceName }}"
+description: |-
+  {{ .Resource.Description }}
+---
+
+# {{ .Resource.ResourceName }} #
+
+{{ .Resource.Description }}
+{{- if .Resource.ResourceNote }}
+
+{{ .Resource.ResourceNote }}
+{{- end }}
+
+## API Information ##
+
+{{- if .Resource.APIReference }}
+* {{ .Resource.Title }} Management [API Information]({{ .Resource.APIReference }})
+{{- else }}
+* {{ .Resource.Title }} Management API information is not defined in the YAML.
+{{- end }}
+{{- if .Resource.APIEndpoint }}
+* API Endpoint: `{{ .Resource.APIEndpoint }}`
+{{- else }}
+* API Endpoint: not defined in the YAML.
+{{- end }}
+
+## GUI Information ##
+
+{{- if .Resource.UILocation }}
+* Location: `{{ .Resource.UILocation }}`
+{{- else }}
+* Location: not defined in the YAML.
+{{- end }}
+
+## Example Usage ##
+
+The configuration snippet below shows all possible attributes of the {{ .Resource.Title }} resource.
+
+!> This example might not be valid configuration and is only used to show all possible attributes.
+
+Example source: `{{ .ExampleSource }}`
+
+```hcl
+{{ .ExampleHCL }}
+```
+
+All examples for the {{ .Resource.Title }} resource can be found in the [examples]({{ .ExamplesURL }}) folder.
+
+## Schema ##
+
+### Required ###
+
+{{- range .RequiredAttributes }}
+{{ renderAttribute . }}
+{{- else }}
+No required attributes.
+{{- end }}
+
+### Optional ###
+
+{{- range .OptionalAttributes }}
+{{ renderAttribute . }}
+{{- else }}
+No optional attributes.
+{{- end }}
+
+### Read-Only ###
+
+{{- range .ReadOnlyAttributes }}
+{{ renderAttribute . }}
+{{- else }}
+No read-only attributes.
+{{- end }}
+
+## Importing
+
+{{ if .Resource.ImportNote -}}
+{{ .Resource.ImportNote }}
+
+{{ end -}}
+An existing {{ .Resource.Title }} resource can be imported with its identifier via the following command:
+
+```shell
+terraform import {{ .Resource.ResourceName }}.example {id}
+```
+
+Starting in Terraform version 1.5, an existing {{ .Resource.Title }} resource can be imported using import blocks via the following configuration:
+
+```hcl
+import {
+  id = "{id}"
+  to = {{ .Resource.ResourceName }}.example
+}
+```
