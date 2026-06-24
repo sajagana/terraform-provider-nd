@@ -23,10 +23,10 @@ type NDFCFabricCommonModel struct {
 	Location                   NDFCLocationValue                  `json:"location,omitempty"`
 	AlertSuspend               string                             `json:"alertSuspend,omitempty"`
 	Management                 NDFCManagementValue                `json:"management,omitempty"`
-	TelemetrySettings          NDFCTelemetrySettingsValue         `json:"telemetrySettings,omitempty"`
+	Meta                       NDFCMetaValue                      `json:"meta,omitempty"`
 	ExternalStreamingSettings  NDFCExternalStreamingSettingsValue `json:"externalStreamingSettings,omitempty"`
 	FeatureStatus              NDFCFeatureStatusValue             `json:"featureStatus,omitempty"`
-	Meta                       NDFCMetaValue                      `json:"meta,omitempty"`
+	TelemetrySettings          NDFCTelemetrySettingsValue         `json:"telemetrySettings,omitempty"`
 }
 
 type NDFCLocationValue struct {
@@ -357,6 +357,69 @@ type NDFCNetflowSamplerCollectionValue struct {
 	SamplingRate *int64 `json:"samplingRate,omitempty"`
 }
 
+type NDFCMetaValue struct {
+	AllowedActions []string `json:"allowedActions,omitempty"`
+}
+
+type NDFCExternalStreamingSettingsValue struct {
+	Email      NDFCEmailValues                          `json:"email,omitempty"`
+	MessageBus NDFCMessageBusValues                     `json:"messageBus,omitempty"`
+	Syslog     NDFCExternalStreamingSettingsSyslogValue `json:"syslog,omitempty"`
+}
+
+type NDFCEmailValues []NDFCEmailValue
+
+type NDFCEmailValue struct {
+	Name                      string                      `json:"name,omitempty"`
+	ReceiverEmail             string                      `json:"receiverEmail,omitempty"`
+	Format                    string                      `json:"format,omitempty"`
+	StartDate                 string                      `json:"startDate,omitempty"`
+	CollectionFrequencyInDays *int64                      `json:"collectionFrequencyInDays,omitempty"`
+	OnlyIncludeActiveAlerts   *bool                       `json:"onlyIncludeActiveAlerts,omitempty"`
+	CollectionSettings        NDFCCollectionSettingsValue `json:"collectionSettings,omitempty"`
+}
+
+type NDFCCollectionSettingsValue struct {
+	CollectionType            string   `json:"collectionType,omitempty"`
+	Anomalies                 []string `json:"anomalies,omitempty"`
+	Advisories                []string `json:"advisories,omitempty"`
+	RiskAndConformanceReports []string `json:"riskAndConformanceReports,omitempty"`
+}
+
+type NDFCMessageBusValues []NDFCMessageBusValue
+
+type NDFCMessageBusValue struct {
+	Server             string                                `json:"server,omitempty"`
+	CollectionType     string                                `json:"collectionType,omitempty"`
+	CollectionSettings NDFCMessageBusCollectionSettingsValue `json:"collectionSettings,omitempty"`
+}
+
+type NDFCMessageBusCollectionSettingsValue struct {
+	CollectionSettingsCollectionType string   `json:"collectionType,omitempty"`
+	Anomalies                        []string `json:"anomalies,omitempty"`
+	Advisories                       []string `json:"advisories,omitempty"`
+	Statistics                       []string `json:"statistics,omitempty"`
+	Faults                           []string `json:"faults,omitempty"`
+	AuditLogs                        []string `json:"auditLogs,omitempty"`
+}
+
+type NDFCExternalStreamingSettingsSyslogValue struct {
+	SyslogServers      []string                          `json:"servers,omitempty"`
+	SyslogFacility     string                            `json:"facility,omitempty"`
+	CollectionSettings NDFCSyslogCollectionSettingsValue `json:"collectionSettings,omitempty"`
+}
+
+type NDFCSyslogCollectionSettingsValue struct {
+	SyslogAnomalies []string `json:"anomalies,omitempty"`
+}
+
+type NDFCFeatureStatusValue struct {
+	ControllerStatus    string `json:"controller,omitempty"`
+	TelemetryStatus     string `json:"telemetry,omitempty"`
+	OrchestrationStatus string `json:"orchestration,omitempty"`
+	TrapForwarderStatus string `json:"trapForwarder,omitempty"`
+}
+
 type NDFCTelemetrySettingsValue struct {
 	DummyField       string                                     `json:"-"`
 	FlowCollection   NDFCTelemetrySettingsFlowCollectionValue   `json:"flowCollection,omitempty"`
@@ -527,67 +590,4 @@ type NDFCNasExportSettingsValue struct {
 
 type NDFCTelemetrySettingsEnergyManagementValue struct {
 	Cost *float64 `json:"cost,omitempty"`
-}
-
-type NDFCExternalStreamingSettingsValue struct {
-	Email      NDFCEmailValues                          `json:"email,omitempty"`
-	MessageBus NDFCMessageBusValues                     `json:"messageBus,omitempty"`
-	Syslog     NDFCExternalStreamingSettingsSyslogValue `json:"syslog,omitempty"`
-}
-
-type NDFCEmailValues []NDFCEmailValue
-
-type NDFCEmailValue struct {
-	Name                      string                      `json:"name,omitempty"`
-	ReceiverEmail             string                      `json:"receiverEmail,omitempty"`
-	Format                    string                      `json:"format,omitempty"`
-	StartDate                 string                      `json:"startDate,omitempty"`
-	CollectionFrequencyInDays *int64                      `json:"collectionFrequencyInDays,omitempty"`
-	OnlyIncludeActiveAlerts   *bool                       `json:"onlyIncludeActiveAlerts,omitempty"`
-	CollectionSettings        NDFCCollectionSettingsValue `json:"collectionSettings,omitempty"`
-}
-
-type NDFCCollectionSettingsValue struct {
-	CollectionType            string   `json:"collectionType,omitempty"`
-	Anomalies                 []string `json:"anomalies,omitempty"`
-	Advisories                []string `json:"advisories,omitempty"`
-	RiskAndConformanceReports []string `json:"riskAndConformanceReports,omitempty"`
-}
-
-type NDFCMessageBusValues []NDFCMessageBusValue
-
-type NDFCMessageBusValue struct {
-	Server             string                                `json:"server,omitempty"`
-	CollectionType     string                                `json:"collectionType,omitempty"`
-	CollectionSettings NDFCMessageBusCollectionSettingsValue `json:"collectionSettings,omitempty"`
-}
-
-type NDFCMessageBusCollectionSettingsValue struct {
-	CollectionSettingsCollectionType string   `json:"collectionType,omitempty"`
-	Anomalies                        []string `json:"anomalies,omitempty"`
-	Advisories                       []string `json:"advisories,omitempty"`
-	Statistics                       []string `json:"statistics,omitempty"`
-	Faults                           []string `json:"faults,omitempty"`
-	AuditLogs                        []string `json:"auditLogs,omitempty"`
-}
-
-type NDFCExternalStreamingSettingsSyslogValue struct {
-	SyslogServers      []string                          `json:"servers,omitempty"`
-	SyslogFacility     string                            `json:"facility,omitempty"`
-	CollectionSettings NDFCSyslogCollectionSettingsValue `json:"collectionSettings,omitempty"`
-}
-
-type NDFCSyslogCollectionSettingsValue struct {
-	SyslogAnomalies []string `json:"anomalies,omitempty"`
-}
-
-type NDFCFeatureStatusValue struct {
-	ControllerStatus    string `json:"controller,omitempty"`
-	TelemetryStatus     string `json:"telemetry,omitempty"`
-	OrchestrationStatus string `json:"orchestration,omitempty"`
-	TrapForwarderStatus string `json:"trapForwarder,omitempty"`
-}
-
-type NDFCMetaValue struct {
-	AllowedActions []string `json:"allowedActions,omitempty"`
 }

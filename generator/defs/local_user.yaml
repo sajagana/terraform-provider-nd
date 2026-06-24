@@ -5,9 +5,9 @@ resource:
   generate_tf_resource: true
   skip_equality: true
   description: Manages local user for Nexus Dashboard
-  api_endpoint: /api/v1/infra/aaa/localUsers
-  api_reference: https://developer.cisco.com/docs/nexus-dashboard/latest/list-local-users/
-  ui_location: "Admin -> Users and Security -> Users -> Local"
+  # api_endpoint: /api/v1/infra/aaa/localUsers
+  # api_reference: https://developer.cisco.com/docs/nexus-dashboard/latest/list-local-users/
+  # ui_location: "Admin -> Users and Security -> Users -> Local"
   resource_title: Local User
   attributes:
   - model_name: id

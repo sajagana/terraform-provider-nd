@@ -12,11 +12,11 @@ description: |-
 Manages local user for Nexus Dashboard
 
 ## API Information ##
-* Local User Management [API Information](https://developer.cisco.com/docs/nexus-dashboard/latest/list-local-users/)
-* API Endpoint: `/api/v1/infra/aaa/localUsers`
+* Local User Management API information is not defined in the YAML.
+* API Endpoint: not defined in the YAML.
 
 ## GUI Information ##
-* Location: `Admin -> Users and Security -> Users -> Local`
+* Location: not defined in the YAML.
 
 ## Example Usage ##
 
