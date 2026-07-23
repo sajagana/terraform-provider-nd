@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -68,7 +69,10 @@ func InventorySwitchResourceSchema(ctx context.Context) schema.Schema {
 				Computed:            true,
 				Description:         "Preserve existing config (true=brownfield, false=greenfield)",
 				MarkdownDescription: "Preserve existing config (true=brownfield, false=greenfield)",
-				Default:             booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+				Default: booldefault.StaticBool(false),
 			},
 			"recalculate": schema.BoolAttribute{
 				Optional:            true,

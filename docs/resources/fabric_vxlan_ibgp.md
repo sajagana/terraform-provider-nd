@@ -14,20 +14,24 @@ description: |-
 
 ```terraform
 resource "nd_fabric_vxlan_ibgp" "test_resource_fabric_vxlan_ibgp_1" {
-  fabric_name                                  = "my_fabric_ibgp"
-  license_tier                                 = "premier"
-  telemetry_collection                         = false
-  security_domain                              = "all"
-  bgp_asn                                      = "55000"
-  target_subnet_mask                           = 30
-  anycast_gateway_mac                          = "2020.0000.00aa"
-  performance_monitoring                       = false
-  replication_mode                             = "multicast"
-  multicast_group_subnet                       = "239.1.1.0/25"
-  underlay_multicast_group_address_limit       = 128
-  tenant_routed_multicast                      = false
-  rendezvous_point_count                       = 2
-  category                                     = "fabric"
+  fabric_name                            = "my_fabric_ibgp"
+  license_tier                           = "premier"
+  telemetry_collection                   = false
+  security_domain                        = "all"
+  bgp_asn                                = "55000"
+  target_subnet_mask                     = 30
+  anycast_gateway_mac                    = "2020.0000.00aa"
+  performance_monitoring                 = false
+  replication_mode                       = "multicast"
+  multicast_group_subnet                 = "239.1.1.0/25"
+  underlay_multicast_group_address_limit = 128
+  tenant_routed_multicast                = false
+  rendezvous_point_count                 = 2
+  category                               = "fabric"
+  location = {
+    latitude  = 42.0
+    longitude = 42.0
+  }
   alert_suspend                                = "disabled"
   rendezvous_point_loopback_id                 = 254
   vpc_peer_link_vlan                           = "3600"
@@ -167,6 +171,7 @@ resource "nd_fabric_vxlan_ibgp" "test_resource_fabric_vxlan_ibgp_1" {
   heartbeat_interval                           = 190
   allow_smart_switch_onboarding                = false
   netflow_enable                               = false
+  cost                                         = 1.2
 }
 ```
 
