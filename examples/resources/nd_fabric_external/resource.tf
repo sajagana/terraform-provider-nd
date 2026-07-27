@@ -1,11 +1,15 @@
 
 resource "nd_fabric_external" "test_resource_fabric_external_1" {
-  fabric_name                               = "my_ext_fabric"
-  license_tier                              = "premier"
-  telemetry_collection                      = false
-  security_domain                           = "all"
-  bgp_asn                                   = "65001"
-  category                                  = "fabric"
+  fabric_name          = "my_ext_fabric"
+  license_tier         = "premier"
+  telemetry_collection = false
+  security_domain      = "all"
+  bgp_asn              = "65001"
+  category             = "fabric"
+  location = {
+    latitude  = 37.77
+    longitude = -122.41
+  }
   alert_suspend                             = "disabled"
   create_bgp_config                         = true
   advanced_ssh_option                       = false
@@ -34,4 +38,5 @@ resource "nd_fabric_external" "test_resource_fabric_external_1" {
   scheduled_backup                          = false
   snmp_trap                                 = true
   sub_interface_dot1q_range                 = "2-511"
+  cost                                      = 1.2
 }

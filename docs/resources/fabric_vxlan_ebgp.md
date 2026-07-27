@@ -14,28 +14,32 @@ description: |-
 
 ```terraform
 resource "nd_fabric_vxlan_ebgp" "test_resource_fabric_vxlan_ebgp_1" {
-  fabric_name                                  = "my_fabric"
-  license_tier                                 = "premier"
-  telemetry_collection                         = false
-  security_domain                              = "all"
-  bgp_asn                                      = "55000"
-  super_spine_bgp_as                           = "65000"
-  bgp_as_mode                                  = "multiAS"
-  bgp_asn_auto_allocation                      = true
-  bgp_asn_range                                = "65000-65535"
-  bgp_allow_as_in_num                          = 1
-  bgp_max_path                                 = 4
-  bgp_underlay_failure_protect                 = false
-  auto_configure_ebgp_evpn_peering             = true
-  allow_leaf_same_as                           = false
-  target_subnet_mask                           = 30
-  anycast_gateway_mac                          = "2020.0000.00aa"
-  performance_monitoring                       = false
-  replication_mode                             = "multicast"
-  multicast_group_subnet                       = "239.1.1.0/25"
-  tenant_routed_multicast                      = false
-  rendezvous_point_count                       = 2
-  category                                     = "fabric"
+  fabric_name                      = "my_fabric"
+  license_tier                     = "premier"
+  telemetry_collection             = false
+  security_domain                  = "all"
+  bgp_asn                          = "55000"
+  super_spine_bgp_as               = "65000"
+  bgp_as_mode                      = "multiAS"
+  bgp_asn_auto_allocation          = true
+  bgp_asn_range                    = "65000-65535"
+  bgp_allow_as_in_num              = 1
+  bgp_max_path                     = 4
+  bgp_underlay_failure_protect     = false
+  auto_configure_ebgp_evpn_peering = true
+  allow_leaf_same_as               = false
+  target_subnet_mask               = 30
+  anycast_gateway_mac              = "2020.0000.00aa"
+  performance_monitoring           = false
+  replication_mode                 = "multicast"
+  multicast_group_subnet           = "239.1.1.0/25"
+  tenant_routed_multicast          = false
+  rendezvous_point_count           = 2
+  category                         = "fabric"
+  location = {
+    latitude  = 42.0
+    longitude = 42.0
+  }
   alert_suspend                                = "disabled"
   rendezvous_point_loopback_id                 = 254
   vpc_peer_link_vlan                           = "3600"
@@ -140,6 +144,7 @@ resource "nd_fabric_vxlan_ebgp" "test_resource_fabric_vxlan_ebgp_1" {
   heartbeat_interval                           = 190
   allow_smart_switch_onboarding                = false
   netflow_enable                               = false
+  cost                                         = 1.2
 }
 ```
 
