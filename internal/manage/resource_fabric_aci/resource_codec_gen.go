@@ -16,7 +16,9 @@ import (
 )
 
 type NDFCFabricAciModel struct {
-	Spec NDFCSpecValue `json:"spec,omitempty"`
+	DeRegister bool          `json:"-"`
+	ReRegister bool          `json:"-"`
+	Spec       NDFCSpecValue `json:"spec,omitempty"`
 }
 
 type NDFCSpecValue struct {
@@ -167,6 +169,10 @@ func (v *FabricAciModel) SetModelData(jsonData *NDFCFabricAciModel) diag.Diagnos
 		v.VerifyCa = types.BoolNull()
 	}
 
+	v.DeRegister = types.BoolValue(jsonData.DeRegister)
+
+	v.ReRegister = types.BoolValue(jsonData.ReRegister)
+
 	return err
 }
 
@@ -266,6 +272,14 @@ func (v FabricAciModel) GetModelData() *NDFCFabricAciModel {
 		*data.Spec.Aci.VerifyCa = v.VerifyCa.ValueBool()
 	} else {
 		data.Spec.Aci.VerifyCa = nil
+	}
+
+	if !v.DeRegister.IsNull() && !v.DeRegister.IsUnknown() {
+		data.DeRegister = v.DeRegister.ValueBool()
+	}
+
+	if !v.ReRegister.IsNull() && !v.ReRegister.IsUnknown() {
+		data.ReRegister = v.ReRegister.ValueBool()
 	}
 
 	return data

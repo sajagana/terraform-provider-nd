@@ -18,10 +18,12 @@ import (
 
 // Fabric ACI API endpoints.
 const (
-	UrlAciCluster             = "/infra/clusters"
-	UrlAciClusterByName       = "/infra/clusters/%s"
-	UrlAciClusterRemoveByName = "/infra/clusters/%s/remove"
-	UrlAciFabricByName        = "/manage/fabrics/%s"
+	UrlAciCluster                 = "/infra/clusters"
+	UrlAciClusterByName           = "/infra/clusters/%s"
+	UrlAciClusterDeRegisterByName = "/infra/clusters/%s/deregister"
+	UrlAciClusterRemoveByName     = "/infra/clusters/%s/remove"
+	UrlAciFabricByName            = "/manage/fabrics/%s"
+	UrlAciFabricReRegister        = "/manage/fabrics/%s/actions/reRegister"
 )
 
 const RscNameFabricAci = "fabric_aci"
@@ -29,13 +31,16 @@ const RscNameFabricAci = "fabric_aci"
 type FabricAciAPI struct {
 	ndapi.NexusDashboardAPICommon
 	ClusterName string
+	DeRegister  bool
 	Delete      bool
+	ReRegister  bool
 }
 
-func NewFabricAciAPI(client *nd.Client) *FabricAciAPI {
+func NewFabricAciAPI(client *nd.Client, fabric string) *FabricAciAPI {
 	papi := new(FabricAciAPI)
 	papi.Client = client
 	papi.NexusDashboardAPI = papi
+	papi.Fabric = fabric
 	return papi
 }
 
@@ -47,6 +52,12 @@ func (c *FabricAciAPI) GetUrl() string {
 }
 
 func (c *FabricAciAPI) PostUrl() string {
+	if c.DeRegister {
+		return fmt.Sprintf(UrlAciClusterDeRegisterByName, c.ClusterName)
+	}
+	if c.ReRegister {
+		return fmt.Sprintf(UrlAciFabricReRegister, c.ClusterName)
+	}
 	if c.Delete {
 		return c.DeleteUrl()
 	}

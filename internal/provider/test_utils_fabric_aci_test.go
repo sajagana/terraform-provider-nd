@@ -65,6 +65,18 @@ func FabricAciModelHelperStateCheck(RscName string, c resource_fabric_aci.NDFCFa
 	}
 	if c.Spec.Aci.VerifyCa != nil {
 		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("verify_ca").String(), strconv.FormatBool(*c.Spec.Aci.VerifyCa)))
+	} else {
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("verify_ca").String(), "false"))
+	}
+	if c.DeRegister {
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("de_register").String(), "true"))
+	} else {
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("de_register").String(), "false"))
+	}
+	if c.ReRegister {
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("re_register").String(), "true"))
+	} else {
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("re_register").String(), "false"))
 	}
 	return ret
 }
