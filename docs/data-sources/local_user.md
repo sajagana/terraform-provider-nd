@@ -34,7 +34,6 @@ data "nd_local_user" "test_resource_local_user_1" {
 - `remote_user_authorization` (Boolean) The Remote user authorization is used for signing into Nexus Dashboard when using identity providers that cannot provide authorization claims.
 - `security_domains` (Attributes Map) The security domains of the local user. (see [below for nested schema](#nestedatt--security_domains))
 - `tenant_domain` (String) The name of the tenant domain of the local user.
-- `user_password` (String) The password of the local user.
 
 <a id="nestedatt--security_domains"></a>
 ### Nested Schema for `security_domains`

@@ -73,11 +73,6 @@ func LocalUserDataSourceSchema(ctx context.Context) schema.Schema {
 				Description:         "The name of the tenant domain of the local user.",
 				MarkdownDescription: "The name of the tenant domain of the local user.",
 			},
-			"user_password": schema.StringAttribute{
-				Computed:            true,
-				Description:         "The password of the local user.",
-				MarkdownDescription: "The password of the local user.",
-			},
 		},
 		Description:         "Datasource of the local user for Nexus Dashboard",
 		MarkdownDescription: "Datasource of the local user for Nexus Dashboard",
@@ -93,7 +88,6 @@ type LocalUserModel struct {
 	RemoteUserAuthorization types.Bool   `tfsdk:"remote_user_authorization"`
 	SecurityDomains         types.Map    `tfsdk:"security_domains"`
 	TenantDomain            types.String `tfsdk:"tenant_domain"`
-	UserPassword            types.String `tfsdk:"user_password"`
 }
 
 var _ basetypes.ObjectTypable = SecurityDomainsType{}

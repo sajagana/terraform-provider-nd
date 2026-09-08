@@ -125,12 +125,6 @@ datasource:
     tf_requires_replace: true
     example: local_user_123
 
-  - model_name: password
-    tf_name: user_password
-    description: The password of the local user.
-    type: String
-    computed: true
-
   - model_name: email
     tf_name: email
     description: The email address of the local user.
