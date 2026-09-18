@@ -3,29 +3,38 @@
 package resource_remote_storage_location
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type NDFCRemoteStorageLocationModel struct {
-	Name                string                  `json:"name,omitempty"`
-	Description         string                  `json:"description,omitempty"`
-	StorageLocationType string                  `json:"type,omitempty"`
-	ReadWrite           *bool                   `json:"readWrite,omitempty"`
-	Hostname            string                  `json:"hostname,omitempty"`
-	Port                *int64                  `json:"port,omitempty"`
-	Path                string                  `json:"path,omitempty"`
-	AlertThreshold      *int64                  `json:"alertThreshold,omitempty"`
-	Limit               string                  `json:"limit,omitempty"`
-	AcceptHostKey       bool                    `json:"-"`
-	HealthState         string                  `json:"-"`
-	HealthStateMessage  string                  `json:"-"`
-	Authentication      NDFCAuthenticationValue `json:"authentication,omitempty"`
+	Name               string           `json:"name,omitempty"`
+	Description        string           `json:"description,omitempty"`
+	Hostname           string           `json:"hostname,omitempty"`
+	Path               string           `json:"path,omitempty"`
+	Nfs                NDFCNfsValue     `json:"-"`
+	ScpSftp            NDFCScpSftpValue `json:"-"`
+	HealthState        string           `json:"-"`
+	HealthStateMessage string           `json:"-"`
+}
+
+type NDFCNfsValue struct {
+	Port           *int64 `json:"port,omitempty"`
+	Limit          string `json:"limit,omitempty"`
+	ReadWrite      *bool  `json:"readWrite,omitempty"`
+	AlertThreshold *int64 `json:"alertThreshold,omitempty"`
+}
+
+type NDFCScpSftpValue struct {
+	Protocol       string                  `json:"type,omitempty"`
+	Port           *int64                  `json:"port,omitempty"`
+	AcceptHostKey  bool                    `json:"-"`
+	Authentication NDFCAuthenticationValue `json:"authentication,omitempty"`
 }
 
 type NDFCAuthenticationValue struct {
 	Username                string `json:"username,omitempty"`
-	AuthenticationType      string `json:"type,omitempty"`
 	Password                string `json:"password,omitempty"`
 	SshKey                  string `json:"sshKey,omitempty"`
 	Passphrase              string `json:"passphrase,omitempty"`
@@ -48,10 +57,55 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 		v.Description = types.StringNull()
 	}
 
-	if jsonData.StorageLocationType != "" {
-		v.StorageLocationType = types.StringValue(jsonData.StorageLocationType)
+	if jsonData.Hostname != "" {
+		v.Hostname = types.StringValue(jsonData.Hostname)
 	} else {
-		v.StorageLocationType = types.StringNull()
+		v.Hostname = types.StringNull()
+	}
+
+	if jsonData.Path != "" {
+		v.Path = types.StringValue(jsonData.Path)
+	} else {
+		v.Path = types.StringNull()
+	}
+
+	v.Nfs.SetValue(&jsonData.Nfs)
+	v.Nfs.state = attr.ValueStateKnown
+
+	v.ScpSftp.SetValue(&jsonData.ScpSftp)
+	v.ScpSftp.state = attr.ValueStateKnown
+
+	if jsonData.HealthState != "" {
+		v.HealthState = types.StringValue(jsonData.HealthState)
+	} else {
+		v.HealthState = types.StringNull()
+	}
+
+	if jsonData.HealthStateMessage != "" {
+		v.HealthStateMessage = types.StringValue(jsonData.HealthStateMessage)
+	} else {
+		v.HealthStateMessage = types.StringNull()
+	}
+
+	return err
+}
+
+func (v *NfsValue) SetValue(jsonData *NDFCNfsValue) diag.Diagnostics {
+
+	var err diag.Diagnostics
+	err = nil
+
+	if jsonData.Port != nil {
+		v.Port = types.Int64Value(*jsonData.Port)
+
+	} else {
+		v.Port = types.Int64Null()
+	}
+
+	if jsonData.Limit != "" {
+		v.Limit = types.StringValue(jsonData.Limit)
+	} else {
+		v.Limit = types.StringNull()
 	}
 
 	if jsonData.ReadWrite != nil {
@@ -61,10 +115,25 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 		v.ReadWrite = types.BoolNull()
 	}
 
-	if jsonData.Hostname != "" {
-		v.Hostname = types.StringValue(jsonData.Hostname)
+	if jsonData.AlertThreshold != nil {
+		v.AlertThreshold = types.Int64Value(*jsonData.AlertThreshold)
+
 	} else {
-		v.Hostname = types.StringNull()
+		v.AlertThreshold = types.Int64Null()
+	}
+
+	return err
+}
+
+func (v *ScpSftpValue) SetValue(jsonData *NDFCScpSftpValue) diag.Diagnostics {
+
+	var err diag.Diagnostics
+	err = nil
+
+	if jsonData.Protocol != "" {
+		v.Protocol = types.StringValue(jsonData.Protocol)
+	} else {
+		v.Protocol = types.StringNull()
 	}
 
 	if jsonData.Port != nil {
@@ -74,37 +143,11 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 		v.Port = types.Int64Null()
 	}
 
-	if jsonData.Path != "" {
-		v.Path = types.StringValue(jsonData.Path)
-	} else {
-		v.Path = types.StringNull()
-	}
-
-	if jsonData.AlertThreshold != nil {
-		v.AlertThreshold = types.Int64Value(*jsonData.AlertThreshold)
-
-	} else {
-		v.AlertThreshold = types.Int64Null()
-	}
-
-	if jsonData.Limit != "" {
-		v.Limit = types.StringValue(jsonData.Limit)
-	} else {
-		v.Limit = types.StringNull()
-	}
-
 	if jsonData.Authentication.Username != "" {
 		v.Username = types.StringValue(jsonData.Authentication.Username)
 
 	} else {
 		v.Username = types.StringNull()
-	}
-
-	if jsonData.Authentication.AuthenticationType != "" {
-		v.AuthenticationType = types.StringValue(jsonData.Authentication.AuthenticationType)
-
-	} else {
-		v.AuthenticationType = types.StringNull()
 	}
 
 	if jsonData.Authentication.Password != "" {
@@ -136,17 +179,6 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 	}
 
 	v.AcceptHostKey = types.BoolValue(jsonData.AcceptHostKey)
-	if jsonData.HealthState != "" {
-		v.HealthState = types.StringValue(jsonData.HealthState)
-	} else {
-		v.HealthState = types.StringNull()
-	}
-
-	if jsonData.HealthStateMessage != "" {
-		v.HealthStateMessage = types.StringValue(jsonData.HealthStateMessage)
-	} else {
-		v.HealthStateMessage = types.StringNull()
-	}
 
 	return err
 }
@@ -168,31 +200,10 @@ func (v RemoteStorageLocationModel) GetModelData() *NDFCRemoteStorageLocationMod
 		data.Description = ""
 	}
 
-	if !v.StorageLocationType.IsNull() && !v.StorageLocationType.IsUnknown() {
-		data.StorageLocationType = v.StorageLocationType.ValueString()
-	} else {
-		data.StorageLocationType = ""
-	}
-
-	if !v.ReadWrite.IsNull() && !v.ReadWrite.IsUnknown() {
-		data.ReadWrite = new(bool)
-		*data.ReadWrite = v.ReadWrite.ValueBool()
-	} else {
-		data.ReadWrite = nil
-	}
-
 	if !v.Hostname.IsNull() && !v.Hostname.IsUnknown() {
 		data.Hostname = v.Hostname.ValueString()
 	} else {
 		data.Hostname = ""
-	}
-
-	if !v.Port.IsNull() && !v.Port.IsUnknown() {
-		data.Port = new(int64)
-		*data.Port = v.Port.ValueInt64()
-
-	} else {
-		data.Port = nil
 	}
 
 	if !v.Path.IsNull() && !v.Path.IsUnknown() {
@@ -201,53 +212,110 @@ func (v RemoteStorageLocationModel) GetModelData() *NDFCRemoteStorageLocationMod
 		data.Path = ""
 	}
 
-	if !v.AlertThreshold.IsNull() && !v.AlertThreshold.IsUnknown() {
-		data.AlertThreshold = new(int64)
-		*data.AlertThreshold = v.AlertThreshold.ValueInt64()
-
+	if !v.HealthState.IsNull() && !v.HealthState.IsUnknown() {
+		data.HealthState = v.HealthState.ValueString()
 	} else {
-		data.AlertThreshold = nil
+		data.HealthState = ""
 	}
 
-	if !v.Limit.IsNull() && !v.Limit.IsUnknown() {
-		data.Limit = v.Limit.ValueString()
+	if !v.HealthStateMessage.IsNull() && !v.HealthStateMessage.IsUnknown() {
+		data.HealthStateMessage = v.HealthStateMessage.ValueString()
 	} else {
-		data.Limit = ""
+		data.HealthStateMessage = ""
 	}
 
-	if !v.Username.IsNull() && !v.Username.IsUnknown() {
-		data.Authentication.Username = v.Username.ValueString()
+	//MARSHAL_BODY
+
+	// Nested types Nfs # port
+	if !v.Nfs.Port.IsNull() && !v.Nfs.Port.IsUnknown() {
+		data.Nfs.Port = new(int64)
+		*data.Nfs.Port = v.Nfs.Port.ValueInt64()
+
 	} else {
-		data.Authentication.Username = ""
+		data.Nfs.Port = nil
 	}
 
-	if !v.Password.IsNull() && !v.Password.IsUnknown() {
-		data.Authentication.Password = v.Password.ValueString()
+	// Nested types Nfs # limit
+	if !v.Nfs.Limit.IsNull() && !v.Nfs.Limit.IsUnknown() {
+		data.Nfs.Limit = v.Nfs.Limit.ValueString()
 	} else {
-		data.Authentication.Password = ""
+		data.Nfs.Limit = ""
 	}
 
-	if !v.SshKey.IsNull() && !v.SshKey.IsUnknown() {
-		data.Authentication.SshKey = v.SshKey.ValueString()
+	// Nested types Nfs # read_write
+	if !v.Nfs.ReadWrite.IsNull() && !v.Nfs.ReadWrite.IsUnknown() {
+		data.Nfs.ReadWrite = new(bool)
+		*data.Nfs.ReadWrite = v.Nfs.ReadWrite.ValueBool()
 	} else {
-		data.Authentication.SshKey = ""
+		data.Nfs.ReadWrite = nil
 	}
 
-	if !v.Passphrase.IsNull() && !v.Passphrase.IsUnknown() {
-		data.Authentication.Passphrase = v.Passphrase.ValueString()
+	// Nested types Nfs # alert_threshold
+	if !v.Nfs.AlertThreshold.IsNull() && !v.Nfs.AlertThreshold.IsUnknown() {
+		data.Nfs.AlertThreshold = new(int64)
+		*data.Nfs.AlertThreshold = v.Nfs.AlertThreshold.ValueInt64()
+
 	} else {
-		data.Authentication.Passphrase = ""
+		data.Nfs.AlertThreshold = nil
 	}
 
-	if !v.IgnoreHostKeyValidation.IsNull() && !v.IgnoreHostKeyValidation.IsUnknown() {
-		data.Authentication.IgnoreHostKeyValidation = new(bool)
-		*data.Authentication.IgnoreHostKeyValidation = v.IgnoreHostKeyValidation.ValueBool()
+	//MARSHAL_BODY
+
+	// Nested types ScpSftp # protocol
+	if !v.ScpSftp.Protocol.IsNull() && !v.ScpSftp.Protocol.IsUnknown() {
+		data.ScpSftp.Protocol = v.ScpSftp.Protocol.ValueString()
 	} else {
-		data.Authentication.IgnoreHostKeyValidation = nil
+		data.ScpSftp.Protocol = ""
 	}
 
-	if !v.AcceptHostKey.IsNull() && !v.AcceptHostKey.IsUnknown() {
-		data.AcceptHostKey = v.AcceptHostKey.ValueBool()
+	// Nested types ScpSftp # port
+	if !v.ScpSftp.Port.IsNull() && !v.ScpSftp.Port.IsUnknown() {
+		data.ScpSftp.Port = new(int64)
+		*data.ScpSftp.Port = v.ScpSftp.Port.ValueInt64()
+
+	} else {
+		data.ScpSftp.Port = nil
+	}
+
+	// Nested types ScpSftp # username
+	if !v.ScpSftp.Username.IsNull() && !v.ScpSftp.Username.IsUnknown() {
+		data.ScpSftp.Authentication.Username = v.ScpSftp.Username.ValueString()
+	} else {
+		data.ScpSftp.Authentication.Username = ""
+	}
+
+	// Nested types ScpSftp # password
+	if !v.ScpSftp.Password.IsNull() && !v.ScpSftp.Password.IsUnknown() {
+		data.ScpSftp.Authentication.Password = v.ScpSftp.Password.ValueString()
+	} else {
+		data.ScpSftp.Authentication.Password = ""
+	}
+
+	// Nested types ScpSftp # ssh_key
+	if !v.ScpSftp.SshKey.IsNull() && !v.ScpSftp.SshKey.IsUnknown() {
+		data.ScpSftp.Authentication.SshKey = v.ScpSftp.SshKey.ValueString()
+	} else {
+		data.ScpSftp.Authentication.SshKey = ""
+	}
+
+	// Nested types ScpSftp # passphrase
+	if !v.ScpSftp.Passphrase.IsNull() && !v.ScpSftp.Passphrase.IsUnknown() {
+		data.ScpSftp.Authentication.Passphrase = v.ScpSftp.Passphrase.ValueString()
+	} else {
+		data.ScpSftp.Authentication.Passphrase = ""
+	}
+
+	// Nested types ScpSftp # ignore_host_key_validation
+	if !v.ScpSftp.IgnoreHostKeyValidation.IsNull() && !v.ScpSftp.IgnoreHostKeyValidation.IsUnknown() {
+		data.ScpSftp.Authentication.IgnoreHostKeyValidation = new(bool)
+		*data.ScpSftp.Authentication.IgnoreHostKeyValidation = v.ScpSftp.IgnoreHostKeyValidation.ValueBool()
+	} else {
+		data.ScpSftp.Authentication.IgnoreHostKeyValidation = nil
+	}
+
+	// Nested types ScpSftp # accept_host_key
+	if !v.ScpSftp.AcceptHostKey.IsNull() && !v.ScpSftp.AcceptHostKey.IsUnknown() {
+		data.ScpSftp.AcceptHostKey = v.ScpSftp.AcceptHostKey.ValueBool()
 	}
 
 	return data
