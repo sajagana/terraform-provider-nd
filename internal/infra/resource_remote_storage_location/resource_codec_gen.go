@@ -69,7 +69,6 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 
 	if jsonData.Port != nil {
 		v.Port = types.Int64Value(*jsonData.Port)
-
 	} else {
 		v.Port = types.Int64Null()
 	}
@@ -82,7 +81,6 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 
 	if jsonData.AlertThreshold != nil {
 		v.AlertThreshold = types.Int64Value(*jsonData.AlertThreshold)
-
 	} else {
 		v.AlertThreshold = types.Int64Null()
 	}
@@ -95,42 +93,36 @@ func (v *RemoteStorageLocationModel) SetModelData(jsonData *NDFCRemoteStorageLoc
 
 	if jsonData.Authentication.Username != "" {
 		v.Username = types.StringValue(jsonData.Authentication.Username)
-
 	} else {
 		v.Username = types.StringNull()
 	}
 
 	if jsonData.Authentication.AuthenticationType != "" {
 		v.AuthenticationType = types.StringValue(jsonData.Authentication.AuthenticationType)
-
 	} else {
 		v.AuthenticationType = types.StringNull()
 	}
 
 	if jsonData.Authentication.Password != "" {
 		v.Password = types.StringValue(jsonData.Authentication.Password)
-
 	} else {
 		v.Password = types.StringNull()
 	}
 
 	if jsonData.Authentication.SshKey != "" {
 		v.SshKey = types.StringValue(jsonData.Authentication.SshKey)
-
 	} else {
 		v.SshKey = types.StringNull()
 	}
 
 	if jsonData.Authentication.Passphrase != "" {
 		v.Passphrase = types.StringValue(jsonData.Authentication.Passphrase)
-
 	} else {
 		v.Passphrase = types.StringNull()
 	}
 
 	if jsonData.Authentication.IgnoreHostKeyValidation != nil {
 		v.IgnoreHostKeyValidation = types.BoolValue(*jsonData.Authentication.IgnoreHostKeyValidation)
-
 	} else {
 		v.IgnoreHostKeyValidation = types.BoolNull()
 	}
