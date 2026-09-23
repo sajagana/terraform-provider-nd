@@ -26,3 +26,14 @@ resource "nd_fabric_aci" "{{.RscName}}" {
 {{end}}
 }
 {{end}}
+
+{{define "ND_FABRIC_ACI_DS"}}
+{{with .FabricAciDataSource}}
+data "nd_fabric_aci" "{{.RscName}}" {
+    fabric_name = "{{.FabricName}}"
+    {{if .DependsOn}}
+    depends_on = [{{.DependsOn}}]
+    {{end}}
+}
+{{end}}
+{{end}}

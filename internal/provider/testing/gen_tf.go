@@ -266,6 +266,13 @@ func GetTFConfigWithSingleResource(tt string, cfg map[string]string, rscs []inte
 				panic(fmt.Sprintf("Failed to execute ND_FABRIC_ACI_RSC template: %v", err))
 			}
 
+		case *FabricAciDataSourceTestData:
+			args["FabricAciDataSource"] = v
+			err = t.ExecuteTemplate(&output, "ND_FABRIC_ACI_DS", args)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to execute ND_FABRIC_ACI_DS template: %v", err))
+			}
+
 		default:
 			panic(fmt.Sprintf("Unknown resource type: %T", rsc))
 		}

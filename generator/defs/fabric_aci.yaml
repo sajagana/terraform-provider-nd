@@ -5,7 +5,7 @@ resource:
   category: manage
   doc_category: Fabric Management
   description: |
-    Manages Fabric ACI for Nexus Dashboard.
+    Manages Fabric ACI for Nexus Dashboard
 
     `<FABRIC_PREFIX>_FORCE` controls forced fabric removal during `terraform destroy` and defaults to `false`. Set it to `true` only when the APIC cluster is unhealthy or unreachable and normal removal cannot complete. Before using forced removal, remove the fabric from deployed templates and ensure that it is no longer used by Nexus Dashboard services.
 
@@ -208,6 +208,129 @@ resource:
     computed: true
     use_state: true
     payload_hide: true
+    ndfc_nested:
+    - status
+    - lastUpdate
+
+datasource:
+  name: fabric_aci
+  generate_tf_resource: true
+  skip_equality: true
+  category: manage
+  doc_category: Fabric Management
+  description: Datasource of the Fabric ACI for Nexus Dashboard
+  attributes:
+  - model_name: name
+    tf_name: fabric_name
+    description: The fabric_name that uniquely identifies the APIC cluster datasource.
+    type: String
+    mandatory: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?$`), "must start and end with an alphanumeric character, contain only letters, digits, or hyphens, and be no more than 64 characters")'
+    ndfc_nested:
+    - spec
+    - aci
+    example: apic1
+
+  - model_name: onboardUrl
+    tf_name: hostname
+    description: The IP address or hostname of the APIC cluster.
+    type: String
+    computed: true
+    ndfc_nested:
+    - spec
+
+  - model_name: latitude
+    tf_name: latitude
+    description: The latitude coordinate of the APIC cluster.
+    type: Float64
+    computed: true
+    ndfc_nested:
+    - spec
+    - location
+
+  - model_name: longitude
+    tf_name: longitude
+    description: The longitude coordinate of the APIC cluster.
+    type: Float64
+    computed: true
+    ndfc_nested:
+    - spec
+    - location
+
+  - model_name: licenseTier
+    tf_name: license_tier
+    description: The license tier of the APIC cluster.
+    type: String
+    computed: true
+    ndfc_nested:
+    - spec
+    - aci
+
+  - model_name: telemetry
+    tf_name: telemetry
+    description: Configures telemetry collection for the APIC cluster.
+    type: Struct
+    computed: true
+    ndfc_nested:
+    - spec
+    - aci
+    attributes:
+    - model_name: status
+      tf_name: status
+      description: The status of telemetry collection for the APIC cluster.
+      type: String
+      computed: true
+
+    - model_name: network
+      tf_name: network
+      description: The network type for telemetry collection.
+      type: String
+      computed: true
+
+    - model_name: epg
+      tf_name: epg
+      description: The APIC End Point Group (EPG) Distinguished Name (DN) used by `inband` telemetry.
+      type: String
+      computed: true
+
+    - model_name: streamingProtocol
+      tf_name: streaming_protocol
+      description: The streaming protocol used for telemetry collection.
+      type: String
+      computed: true
+
+  - model_name: status
+    tf_name: orchestration_status
+    description: The status of the orchestration feature for the APIC cluster.
+    type: String
+    computed: true
+    ndfc_nested:
+    - spec
+    - aci
+    - orchestration
+
+  - model_name: securityDomain
+    tf_name: security_domain
+    description: The name of the security domain for the APIC cluster.
+    type: String
+    computed: true
+    ndfc_nested:
+    - spec
+    - aci
+
+  - model_name: state
+    tf_name: state
+    description: The state of the APIC cluster.
+    type: String
+    computed: true
+    ndfc_nested:
+    - status
+
+  - model_name: message
+    tf_name: last_update_message
+    description: The last update message of the APIC cluster.
+    type: String
+    computed: true
     ndfc_nested:
     - status
     - lastUpdate
