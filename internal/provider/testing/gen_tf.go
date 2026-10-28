@@ -169,6 +169,15 @@ func GetTFConfigWithSingleResource(tt string, cfg map[string]string, rscs []inte
 		}
 
 		switch v := rsc.(type) {
+		case *FabricGroupsTestResource:
+			args["FabricGroups"] = v.Model
+			args["RscName"] = rscName
+			args["RenderEmptyRouteServerCollection"] = v.RenderEmptyRouteServerCollection
+			err = t.ExecuteTemplate(&output, "ND_FABRIC_GROUPS_RSC", args)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to execute ND_FABRIC_GROUPS_RSC template: %v", err))
+			}
+
 		case *FabricTestResource:
 			args[v.TemplateKey] = v.Model
 			args["RscName"] = rscName
