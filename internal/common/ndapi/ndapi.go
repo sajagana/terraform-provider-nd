@@ -9,6 +9,7 @@
 package ndapi
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strings"
@@ -31,11 +32,15 @@ type NexusDashboardAPICommon struct {
 	NexusDashboardAPI
 	Client *nd.Client
 	Fabric string // Fabric scope for locking; defaults to DefaultFabric if empty
+	// RequestOptions applies optional logging/context settings to GET and DELETE.
+	// Existing callers leave this nil and retain their original request modifiers.
+	RequestOptions *APIOptions
 }
 
 // APIOptions encapsulates optional settings for API calls.
 type APIOptions struct {
 	DisablePayloadLog bool // suppress body logging for sensitive payloads
+	Context           context.Context
 }
 
 // Mods builds the request modifier list from the options and payload.
@@ -45,6 +50,11 @@ func (o *APIOptions) Mods(payload []byte) []func(*nd.Req) {
 	var mods []func(*nd.Req)
 	if o != nil && o.DisablePayloadLog {
 		mods = append(mods, nd.NoLogPayload)
+	}
+	if o != nil && o.Context != nil {
+		mods = append(mods, func(req *nd.Req) {
+			req.HttpReq = req.HttpReq.WithContext(o.Context)
+		})
 	}
 	if !json.Valid(payload) {
 		mods = append(mods, nd.RemoveContentType)
@@ -74,7 +84,11 @@ func (c NexusDashboardAPICommon) Get() ([]byte, error) {
 	if c.Client == nil {
 		log.Printf("************Client is nil********************")
 	}
-	res, err := c.Client.GetRawJson(url)
+	var mods []func(*nd.Req)
+	if c.RequestOptions != nil {
+		mods = c.RequestOptions.Mods(nil)
+	}
+	res, err := c.Client.GetRawJson(url, mods...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +135,12 @@ func (c NexusDashboardAPICommon) Delete(payload ...[]byte) (gjson.Result, error)
 	qp := c.NexusDashboardAPI.GetQueryParams()
 	var res nd.Res
 	var err error
+	var mods []func(*nd.Req)
+	if c.RequestOptions != nil {
+		mods = c.RequestOptions.Mods([]byte(body))
+	}
 	if qp != nil && body == "" {
-		res, err = c.Client.Delete(c.NexusDashboardAPI.DeleteUrl(), "", func(req *nd.Req) {
+		mods = append(mods, func(req *nd.Req) {
 			q := req.HttpReq.URL.Query()
 			for _, s := range qp {
 				keys := strings.Split(s, "=")
@@ -130,8 +148,9 @@ func (c NexusDashboardAPICommon) Delete(payload ...[]byte) (gjson.Result, error)
 			}
 			req.HttpReq.URL.RawQuery = q.Encode()
 		})
+		res, err = c.Client.Delete(c.NexusDashboardAPI.DeleteUrl(), "", mods...)
 	} else {
-		res, err = c.Client.Delete(c.NexusDashboardAPI.DeleteUrl(), body)
+		res, err = c.Client.Delete(c.NexusDashboardAPI.DeleteUrl(), body, mods...)
 	}
 	return res, err
 }
