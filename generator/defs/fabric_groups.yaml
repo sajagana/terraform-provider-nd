@@ -1,0 +1,711 @@
+---
+# API model: fabricGroup, Nexus Dashboard Manage v1 1.2.224 (Release 4.2 and later).
+# Source: https://developer.cisco.com/docs/nexus-dashboard/latest/fabricgroup/
+# Workflow: https://www.cisco.com/c/en/us/td/docs/dcn/nd/4x/articles-421/creating-lan-aci-fabrics-and-fabric-groups.html
+#
+# The canonical local Manage 1.1.411 spec supplies the CRUD endpoint contracts.
+# The linked 1.2.224 model is authoritative for this attribute inventory:
+# vxlanAci additionally supports routeServerCollection, routeServerRoutingTag,
+# routeServerRedistributeDirectRouteMap, enableMsOverlayIfcBgpDesc,
+# scheduledBackup, scheduledBackupTime, and the routeServer overlay mode.
+#
+# Attribute availability:
+# - All five types: category, name, management.type.
+# - vxlan and vxlanAci: shared settings below, each marked "Present in".
+# - vxlan only: downstream VNIs, IPv6 underlay, overlay templates, PVLAN,
+#   underlay BGP options, tenant routed multicast, CloudSec, and IPv6 pools.
+# - classic, ipfmFabricGroup, ai: management contains only type.
+# Management settings follow fabric_common.yaml: Terraform attributes are flat,
+# and most ndfc_nested paths map directly into the API management object.
+# security_group_tag uses hidden fabricGroupCodec storage in the common model;
+# its optional JSON hooks map that String to the API management.securityGroupTag field.
+# The fabric_type attribute maps to management.type. Shared attributes follow
+# fabric_common.yaml order; group-only attributes are listed afterward.
+# The API management object remains the union of the five oneOf branches;
+# there is no additional vxlan or vxlanAci wrapper in the JSON payload.
+#
+# Handwritten integration requirements before enabling this resource:
+# - ValidateConfig must reject configured management settings outside fabric_type's
+#   "Present in" set; classic/ipfmFabricGroup/ai accept only the type selector.
+# - ValidateConfig must reject security_group_tag = off for vxlanAci.
+# - ValidateConfig must check VNI range endpoints are 1..16777214, SGT range
+#   endpoints are 16..65535, and each range starts at or below its end.
+# - CRUD must emit only settings supported by fabric_type and leave fields
+#   for other types null on read. API defaults below apply only to supported
+#   fields. Type-dependent defaults deliberately use optional + computed,
+#   without a static default or UseStateForUnknown.
+# - CRUD must derive id from the API-returned name on create/read/import.
+# - Use the shared fabric CRUD implementation for POST /api/v1/manage/fabrics
+#   and GET/PUT/DELETE /api/v1/manage/fabrics/{fabricName}.
+# - Membership uses separate addMembers/removeMembers action endpoints.
+#   Member lists, membership action bodies, clusterName routing, list pagination,
+#   and fabricGroupSummary metadata are outside this fabricGroup model.
+# - Remove member fabrics before deletion; in a vxlanAci group, remove ACI last.
+#   Adding ACI first, disabling its Orchestration, and matching member MAC/SGT
+#   settings are membership prerequisites, not extra fabricGroup attributes.
+# - The route-map description refers to centralizedToRouteServers, which is
+#   not an overlay-mode enum value here. Do not add it to that enum.
+#
+# Codec ownership:
+# - GetModelData/SetModelData remain generated against the common parent model.
+# - Only security_group_tag maps to the hidden fabricGroupCodec String storage;
+#   existing fabric resources retain their common management Boolean storage.
+# - Handwritten MarshalFabricJSON/UnmarshalFabricJSON hooks in the group package
+#   adapt the API representation while reusing shared CRUD. Other fabric models
+#   retain standard JSON handling unless they explicitly implement these hooks.
+# - Regenerate both the common model and group conversion code after YAML edits.
+# Group CRUD/validation and runtime verification are separate stages.
+resource:
+  name: fabric_groups
+  generate_tf_resource: true
+  parent_package: resource_fabric_common
+  parent_model: fabric_common
+  category: manage
+  doc_category: Fabrics
+  rest_endpoint: /api/v1/manage/fabrics
+  import_id:
+    - fabric_name
+  import_desc:
+    - Fabric group name.
+  description: >-
+    Manages a Nexus Dashboard fabric group using the vxlan, vxlanAci, classic,
+    ipfmFabricGroup, or ai management model. VXLAN and VXLAN-ACI groups expose
+    advanced settings; the other models contain only a management type.
+    Member fabric associations use separate API actions. All members must be
+    removed before deleting the group.
+  attributes:
+  # Shared attributes, ordered as in fabric_common.yaml.
+  # Terraform-only identity; the fabricGroup API model has no id property.
+  - model_name: id
+    tf_name: id
+    description: The fabric group name returned by the API and used as the Terraform resource identifier.
+    type: String
+    id: true
+    computed: true
+    payload_hide: true
+
+  # Present in: vxlan, vxlanAci, classic, ipfmFabricGroup, ai.
+  - model_name: name
+    tf_name: fabric_name
+    description: 'Name used to identify the fabric group in API requests and Terraform import. The endpoint accepts names from 1 through 64 characters.'
+    type: String
+    mandatory: true
+    tf_requires_replace: true
+    validator: 'LengthBetween(1, 64)'
+    example: example_fabric_group
+
+  # Present in: vxlan, classic, ipfmFabricGroup, ai, vxlanAci.
+  - model_name: type
+    tf_name: fabric_type
+    ndfc_nested:
+    - management
+    description: 'Selects the fabric group management model. Allowed values are `vxlan`, `classic`, `ipfmFabricGroup`, `ai`, `vxlanAci`.'
+    type: String
+    mandatory: true
+    enum_values: ['vxlan', 'classic', 'ipfmFabricGroup', 'ai', 'vxlanAci']
+    validator: 'OneOf("vxlan", "classic", "ipfmFabricGroup", "ai", "vxlanAci")'
+    example: 'vxlan'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: anycastGatewayMac
+    tf_name: anycast_gateway_mac
+    ndfc_nested:
+    - management
+    description: 'MAC address shared by the VTEP anycast gateways. For vxlanAci, this must match the APIC default bridge domain MAC address. When omitted, the API defaults to `2020.0000.00aa` for vxlan and `0022.bdf8.19ff` for vxlanAci.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^(([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}|([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}|([0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4})$`), "must be a six-byte MAC address in colon, hyphen, or dotted notation")'
+    example: '2020.0000.00aa'
+
+  # Present in: vxlan, vxlanAci, classic, ipfmFabricGroup, ai.
+  - model_name: category
+    tf_name: category
+    description: 'Identifies the API object as a fabric group. The only allowed value is `fabricGroup`. Defaults to `fabricGroup` when not specified in the configuration.'
+    type: String
+    default_value: fabricGroup
+    enum_values: [fabricGroup]
+    validator: 'OneOf("fabricGroup")'
+    example: fabricGroup
+
+  # Present in: vxlan.
+  - model_name: vrfTemplate
+    tf_name: vrf_template
+    ndfc_nested:
+    - management
+    description: 'Template used to create overlay VRFs on leaf switches. The API defaults to `Default_VRF_Universal` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    example: 'Default_VRF_Universal'
+
+  # Present in: vxlan.
+  - model_name: networkTemplate
+    tf_name: network_template
+    ndfc_nested:
+    - management
+    description: 'Template used to create overlay networks on leaf switches. The API defaults to `Default_Network_Universal` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    example: 'Default_Network_Universal'
+
+  # Present in: vxlan.
+  - model_name: vrfExtensionTemplate
+    tf_name: vrf_extension_template
+    ndfc_nested:
+    - management
+    description: 'Template used to extend overlay VRFs to border switches. The API defaults to `Default_VRF_Extension_Universal` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    example: 'Default_VRF_Extension_Universal'
+
+  # Present in: vxlan.
+  - model_name: networkExtensionTemplate
+    tf_name: network_extension_template
+    ndfc_nested:
+    - management
+    description: 'Template used to extend overlay networks to border switches. The API defaults to `Default_Network_Extension_Universal` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    example: 'Default_Network_Extension_Universal'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: l2VniRange
+    tf_name: l2_vni_range
+    ndfc_nested:
+    - management
+    description: 'Range used to allocate Layer 2 VNIs for overlay networks. Use start-end syntax with endpoints from 1 through 16777214. The API defaults to `30000-49000` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[0-9]+-[0-9]+$`), "must use start-end syntax; endpoint bounds and ordering require management validation")'
+    example: '30000-49000'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: l3VniRange
+    tf_name: l3_vni_range
+    ndfc_nested:
+    - management
+    description: 'Range used to allocate Layer 3 VNIs for overlay VRFs. Use start-end syntax with endpoints from 1 through 16777214. The API defaults to `50000-59000` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[0-9]+-[0-9]+$`), "must use start-end syntax; endpoint bounds and ordering require management validation")'
+    example: '50000-59000'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: scheduledBackup
+    tf_name: scheduled_backup
+    ndfc_nested:
+    - management
+    description: 'Enables a daily backup at scheduled_backup_time.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: scheduledBackupTime
+    tf_name: scheduled_backup_time
+    ndfc_nested:
+    - management
+    description: 'Daily backup time in UTC, expressed as HH:MM from 00:00 through 23:59. Used when scheduled_backup is enabled.'
+    type: String
+    optional: true
+    validator: 'RegexMatches(regexp.MustCompile(`^([01]\d|2[0-3]):([0-5]\d)$`), "must be a UTC time in HH:MM format")'
+    example: '02:00'
+
+  # Present in: vxlan.
+  - model_name: underlayIpv6
+    tf_name: underlay_ipv6
+    ndfc_nested:
+    - management
+    description: 'Enables an IPv6 underlay. A false value selects an IPv4 underlay. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: privateVlan
+    tf_name: private_vlan
+    ndfc_nested:
+    - management
+    description: 'Enables private VLANs on switches other than spines and super spines. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: defaultPrivateVlanSecondaryNetworkTemplate
+    tf_name: default_private_vlan_secondary_network_template
+    ndfc_nested:
+    - management
+    description: 'Template used to create secondary networks for private VLANs. The API defaults to `Pvlan_Secondary_Network` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    example: 'Pvlan_Secondary_Network'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupTag
+    tf_name: security_group_tag
+    # Internal codec path; group JSON hooks expose management.securityGroupTag.
+    ndfc_nested:
+    - fabricGroupCodec
+    description: 'Controls security group enforcement. Strict enforcement allows only member fabrics with security groups enabled. The off value applies only to vxlan. Allowed values are `off`, `loose`, `strict`. The vxlanAci model permits only `loose` and `strict`. When omitted, the API defaults to `off` for vxlan and `strict` for vxlanAci.'
+    type: String
+    optional: true
+    computed: true
+    enum_values: ['off', 'loose', 'strict']
+    validator: 'OneOf("off", "loose", "strict")'
+    example: 'off'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupTagPrefix
+    tf_name: security_group_tag_prefix
+    ndfc_nested:
+    - management
+    description: 'Prefix assigned to newly created security groups. Use letters, digits, underscores, or hyphens. Length must be between 1 and 10 characters. The API defaults to `SG_` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'LengthBetween(1, 10), stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9-_]*$`), "must contain only letters, digits, underscores, or hyphens")'
+    example: 'SG_'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupTagIdRange
+    tf_name: security_group_tag_id_range
+    ndfc_nested:
+    - management
+    description: 'Identifier allocation range for security group tags. Use start-end syntax with endpoints from 16 through 65535. The API defaults to `10000-14000` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[0-9]+-[0-9]+$`), "must use start-end syntax; endpoint bounds and ordering require management validation")'
+    example: '10000-14000'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupTagPreprovision
+    tf_name: security_group_tag_preprovision
+    ndfc_nested:
+    - management
+    description: 'Pre-provisions security group configuration in VRFs where enforcement is disabled. When omitted, the API defaults to `false` for vxlan and `true` for vxlanAci.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupTagMacSegmentation
+    tf_name: security_group_tag_mac_segmentation
+    ndfc_nested:
+    - management
+    description: 'Enables MAC address segmentation for security groups. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: securityGroupStatus
+    tf_name: security_group_status
+    ndfc_nested:
+    - management
+    description: 'Security group operational status returned by the API. Returned values are `enabled`, `enabledStrict`, `enabledLoose`, `enablePending`, `enablePendingStrict`, `enablePendingLoose`, `disablePending`, `disabled`.'
+    type: String
+    computed: true
+    payload_hide: true
+    exclude_example: true
+    enum_values: ['enabled', 'enabledStrict', 'enabledLoose', 'enablePending', 'enablePendingStrict', 'enablePendingLoose', 'disablePending', 'disabled']
+
+  # Additional fabric group attributes absent from fabric_common.yaml.
+  # Present in: vxlan.
+  - model_name: downstreamVni
+    tf_name: downstream_vni
+    ndfc_nested:
+    - management
+    description: 'Enables separate VNI allocation for each member fabric. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: downstreamL2VniRange
+    tf_name: downstream_l2_vni_range
+    ndfc_nested:
+    - management
+    description: 'Layer 2 VNI allocation range used when downstream_vni is enabled. Use start-end syntax with endpoints from 1 through 16777214. The API defaults to `60000-69000` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[0-9]+-[0-9]+$`), "must use start-end syntax; endpoint bounds and ordering require management validation")'
+    example: '60000-69000'
+
+  # Present in: vxlan.
+  - model_name: downstreamL3VniRange
+    tf_name: downstream_l3_vni_range
+    ndfc_nested:
+    - management
+    description: 'Layer 3 VNI allocation range used when downstream_vni is enabled. Use start-end syntax with endpoints from 1 through 16777214. The API defaults to `80000-89000` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^[0-9]+-[0-9]+$`), "must use start-end syntax; endpoint bounds and ordering require management validation")'
+    example: '80000-89000'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteOverlayInterConnectType
+    tf_name: multisite_overlay_inter_connect_type
+    ndfc_nested:
+    - management
+    description: 'Selects how Multi-Site overlay interconnects are configured. Allowed values are `manual`, `routeServer`, `directPeering`. When omitted, the API defaults to `manual` for vxlan and `directPeering` for vxlanAci.'
+    type: String
+    optional: true
+    computed: true
+    enum_values: ['manual', 'routeServer', 'directPeering']
+    validator: 'OneOf("manual", "routeServer", "directPeering")'
+    example: 'manual'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: routeServerCollection
+    tf_name: route_server_collection
+    ndfc_nested:
+    - management
+    description: 'Route servers used for Multi-Site overlay connectivity.'
+    type: List
+    optional: true
+    attributes:
+
+    # Present in: vxlan, vxlanAci.
+    - model_name: routeServerIp
+      tf_name: route_server_ip
+      description: 'IPv4 or IPv6 address of the route server.'
+      type: String
+      optional: true
+      validator: 'RegexMatches(regexp.MustCompile(`^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$|^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$`), "must be a valid IPv4 or IPv6 address")'
+      example: '192.0.2.10'
+
+    # Present in: vxlan, vxlanAci.
+    - model_name: routeServerAsn
+      tf_name: route_server_asn
+      description: 'BGP autonomous system number of the route server. Use an integer from 1 through 4294967295 or dotted notation with a first component from 1 through 65535 and a second component from 0 through 65535.'
+      type: String
+      optional: true
+      validator: 'RegexMatches(regexp.MustCompile(`^(([1-9]{1}[0-9]{0,8}|[1-3]{1}[0-9]{1,9}|[4]{1}([0-1]{1}[0-9]{8}|[2]{1}([0-8]{1}[0-9]{7}|[9]{1}([0-3]{1}[0-9]{6}|[4]{1}([0-8]{1}[0-9]{5}|[9]{1}([0-5]{1}[0-9]{4}|[6]{1}([0-6]{1}[0-9]{3}|[7]{1}([0-1]{1}[0-9]{2}|[2]{1}([0-8]{1}[0-9]{1}|[9]{1}[0-5]{1})))))))))|([1-5]\d{4}|[1-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])(\.([1-5]\d{4}|[1-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5]|0))?)$`), "must be a valid AS number in integer or dotted notation")'
+      example: '65001'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: routeServerRedistributeDirectRouteMap
+    tf_name: route_server_redistribute_direct_route_map
+    ndfc_nested:
+    - management
+    description: 'Enables the redistribute-direct route map for automatically created overlay links on route servers. Applies only to the centralizedToRouteServers deployment method described by the API. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: routeServerRoutingTag
+    tf_name: route_server_routing_tag
+    ndfc_nested:
+    - management
+    description: 'Routing tag for redistribution of directly connected routes associated with the route server IP used for eBGP EVPN peering. Must be between 0 and 4294967295. The API defaults to `54321` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(0, 4294967295)'
+    example: 54321
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: enableMsOverlayIfcBgpDesc
+    tf_name: enable_multisite_overlay_inter_fabric_bgp_description
+    ndfc_nested:
+    - management
+    description: 'Adds BGP neighbor descriptions to automatically created Multi-Site overlay links. The API defaults to `true` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: true
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: autoMultisiteUnderlayInterConnect
+    tf_name: auto_multisite_underlay_inter_connect
+    ndfc_nested:
+    - management
+    description: 'Automatically configures Multi-Site underlay links between fabrics. When omitted, the API defaults to `false` for vxlan and `true` for vxlanAci.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: bgpSendCommunity
+    tf_name: bgp_send_community
+    ndfc_nested:
+    - management
+    description: 'Enables BGP community advertisement on automatically created Multi-Site underlay links. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: bgpLogNeighborChange
+    tf_name: bgp_log_neighbor_change
+    ndfc_nested:
+    - management
+    description: 'Enables BGP neighbor change logging on automatically created Multi-Site underlay links. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: bgpBfd
+    tf_name: bgp_bfd
+    ndfc_nested:
+    - management
+    description: 'Enables BFD for BGP on automatically created Multi-Site underlay links. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteDelayRestore
+    tf_name: multisite_delay_restore
+    ndfc_nested:
+    - management
+    description: 'Time in seconds allowed for Multi-Site underlay and overlay control planes to converge. Must be between 30 and 1000. The API defaults to `300` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(30, 1000)'
+    example: 300
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteInterConnectBgpAuthentication
+    tf_name: multisite_inter_connect_bgp_authentication
+    ndfc_nested:
+    - management
+    description: 'Enables BGP authentication for Multi-Site interconnects. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteInterConnectBgpAuthKeyType
+    tf_name: multisite_inter_connect_bgp_auth_key_type
+    ndfc_nested:
+    - management
+    description: 'Encryption format of the Multi-Site BGP authentication key. Allowed values are `3des`, `type6`, `type7`. The API defaults to `3des` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    enum_values: ['3des', 'type6', 'type7']
+    validator: 'OneOf("3des", "type6", "type7")'
+    example: '3des'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteInterConnectBgpKey
+    tf_name: multisite_inter_connect_bgp_key
+    ndfc_nested:
+    - management
+    description: 'Encrypted authentication key for Multi-Site BGP, encoded using multisite_inter_connect_bgp_auth_key_type. Whitespace is not permitted. Length must be between 1 and 256 characters.'
+    type: String
+    optional: true
+    # Sensitive: encrypted keys still contain credential material.
+    sensitive: true
+    validator: 'LengthBetween(1, 256), stringvalidator.RegexMatches(regexp.MustCompile(`^\S+$`), "must not contain whitespace")'
+    example: 'exampleEncryptedBgpKey'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteLoopbackId
+    tf_name: multisite_loopback_id
+    ndfc_nested:
+    - management
+    description: 'Loopback interface number used for Multi-Site connectivity. Within a vxlanAci group, this setting applies to NX-OS fabrics. Must be between 0 and 1023. The API defaults to `100` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(0, 1023)'
+    example: 100
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: borderGatewayRoutingTag
+    tf_name: border_gateway_routing_tag
+    ndfc_nested:
+    - management
+    description: 'Routing tag associated with loopback and DCI interface addresses on border gateways. Within a vxlanAci group, this setting applies to NX-OS fabrics. Must be between 0 and 4294967295. The API defaults to `54321` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(0, 4294967295)'
+    example: 54321
+
+  # Present in: vxlan.
+  - model_name: tenantRoutedMulticastV4V6
+    tf_name: tenant_routed_multicast_ipv4_ipv6
+    ndfc_nested:
+    - management
+    description: 'Tracks multicast VPN VRI identifiers at the Multi-Site fabric group to keep them unique across member fabrics. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: autoConfigureCloudSec
+    tf_name: auto_configure_cloud_sec
+    ndfc_nested:
+    - management
+    description: 'Automatically configures CloudSec on border gateways. The API defaults to `false` when the attribute is omitted.'
+    type: Bool
+    ndfc_type: bool
+    optional: true
+    computed: true
+    example: false
+
+  # Present in: vxlan.
+  - model_name: cloudSecKey
+    tf_name: cloud_sec_key
+    ndfc_nested:
+    - management
+    description: 'CloudSec secret key encoded as a Cisco Type 7 encrypted hexadecimal string. Length must be between 1 and 130 characters.'
+    type: String
+    optional: true
+    # Sensitive: encrypted keys still contain credential material.
+    sensitive: true
+    validator: 'LengthBetween(1, 130), stringvalidator.RegexMatches(regexp.MustCompile(`^[a-fA-F0-9]+$`), "must contain hexadecimal characters only")'
+    example: '070C285F4D06'
+
+  # Present in: vxlan.
+  - model_name: cloudSecAlgorithm
+    tf_name: cloud_sec_algorithm
+    ndfc_nested:
+    - management
+    description: 'Algorithm used for CloudSec encryption. Allowed values are `AES_128_CMAC`, `AES_256_CMAC`. The API defaults to `AES_128_CMAC` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    enum_values: ['AES_128_CMAC', 'AES_256_CMAC']
+    validator: 'OneOf("AES_128_CMAC", "AES_256_CMAC")'
+    example: 'AES_128_CMAC'
+
+  # Present in: vxlan.
+  - model_name: cloudSecEnforcement
+    tf_name: cloud_sec_enforcement
+    ndfc_nested:
+    - management
+    description: 'Controls CloudSec enforcement. Strict enforcement requires traffic between sites to be encrypted. Allowed values are `strict`, `loose`. The API defaults to `strict` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    enum_values: ['strict', 'loose']
+    validator: 'OneOf("strict", "loose")'
+    example: 'strict'
+
+  # Present in: vxlan.
+  - model_name: cloudSecReportTimer
+    tf_name: cloud_sec_report_timer
+    ndfc_nested:
+    - management
+    description: 'Interval in minutes between CloudSec operational status reports. Must be between 5 and 60. The API defaults to `5` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(5, 60)'
+    example: 5
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteLoopbackIpRange
+    tf_name: multisite_loopback_ip_range
+    ndfc_nested:
+    - management
+    description: 'IPv4 prefix used to allocate Multi-Site loopback addresses, typically for Loopback100. Use IPv4 CIDR notation. The API defaults to `10.10.0.0/24` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/([0-9]|[12][0-9]|3[0-2])$`), "must be an IPv4 prefix in CIDR notation")'
+    example: '10.10.0.0/24'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteUnderlaySubnetRange
+    tf_name: multisite_underlay_subnet_range
+    ndfc_nested:
+    - management
+    description: 'IPv4 prefix used to allocate point-to-point DCI link addresses. Use IPv4 CIDR notation. The API defaults to `10.10.1.0/24` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/([0-9]|[12][0-9]|3[0-2])$`), "must be an IPv4 prefix in CIDR notation")'
+    example: '10.10.1.0/24'
+
+  # Present in: vxlan, vxlanAci.
+  - model_name: multisiteUnderlaySubnetTargetMask
+    tf_name: multisite_underlay_subnet_target_mask
+    ndfc_nested:
+    - management
+    description: 'IPv4 prefix length assigned to subnets allocated for DCI links. Must be between 8 and 31. The API defaults to `30` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(8, 31)'
+    example: 30
+
+  # Present in: vxlan.
+  - model_name: multisiteLoopbackIpv6Range
+    tf_name: multisite_loopback_ipv6_range
+    ndfc_nested:
+    - management
+    description: 'IPv6 prefix used to allocate Multi-Site loopback addresses, typically for Loopback100. Use IPv6 CIDR notation. The API defaults to `fd00::a10:0/120` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))/([0-9]|[1-9][0-9]|1[01][0-9]|12[0-8])$`), "must be an IPv6 prefix in CIDR notation")'
+    example: 'fd00::a10:0/120'
+
+  # Present in: vxlan.
+  - model_name: multisiteUnderlayIpv6SubnetRange
+    tf_name: multisite_underlay_ipv6_subnet_range
+    ndfc_nested:
+    - management
+    description: 'IPv6 prefix used to allocate point-to-point DCI link addresses. Use IPv6 CIDR notation. The API defaults to `fd00::a11:0/120` when the attribute is omitted.'
+    type: String
+    optional: true
+    computed: true
+    validator: 'RegexMatches(regexp.MustCompile(`^((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))/([0-9]|[1-9][0-9]|1[01][0-9]|12[0-8])$`), "must be an IPv6 prefix in CIDR notation")'
+    example: 'fd00::a11:0/120'
+
+  # Present in: vxlan.
+  - model_name: multisiteUnderlayIpv6SubnetTargetMask
+    tf_name: multisite_underlay_ipv6_subnet_target_mask
+    ndfc_nested:
+    - management
+    description: 'IPv6 prefix length assigned to subnets allocated for DCI links. Must be between 120 and 127. The API defaults to `126` when the attribute is omitted.'
+    type: Int64
+    optional: true
+    computed: true
+    validator: 'Between(120, 127)'
+    example: 126

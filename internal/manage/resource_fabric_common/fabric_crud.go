@@ -46,6 +46,25 @@ type FabricPostUnmarshal interface {
 	PostUnmarshal(ctx context.Context, data *NDFCFabricCommonModel)
 }
 
+// FabricJSONMarshaler optionally replaces JSON encoding after GetModelData and
+// PreMarshal. Models without this hook retain the standard common-model encoder.
+type FabricJSONMarshaler interface {
+	MarshalFabricJSON(data *NDFCFabricCommonModel) ([]byte, error)
+}
+
+// FabricJSONUnmarshaler optionally replaces JSON decoding before PostUnmarshal
+// and SetModelData, so incompatible API field types can be handled first.
+type FabricJSONUnmarshaler interface {
+	UnmarshalFabricJSON(payload []byte, data *NDFCFabricCommonModel) error
+}
+
+func marshalFabricJSON(model FabricModel, data *NDFCFabricCommonModel) ([]byte, error) {
+	if codec, ok := model.(FabricJSONMarshaler); ok {
+		return codec.MarshalFabricJSON(data)
+	}
+	return json.Marshal(data)
+}
+
 // RscCreateFabric creates a fabric resource via the NDFC API.
 func RscCreateFabric(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, model FabricModel) {
 	fabricHandler(model.GetFabricType()).Create(ctx, client, dg, model)
@@ -62,7 +81,7 @@ func createDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
 
-	fabricPayload, err := json.Marshal(inData)
+	fabricPayload, err := marshalFabricJSON(model, inData)
 	if err != nil {
 		dg.AddError(
 			"Error Creating Fabric",
@@ -123,7 +142,11 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 	}
 	var outData NDFCFabricCommonModel
 
-	err = json.Unmarshal(respData, &outData)
+	if codec, ok := model.(FabricJSONUnmarshaler); ok {
+		err = codec.UnmarshalFabricJSON(respData, &outData)
+	} else {
+		err = json.Unmarshal(respData, &outData)
+	}
 	if err != nil {
 		dg.AddError(
 			"Error reading Fabric",
@@ -135,8 +158,8 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 	if pu, ok := model.(FabricPostUnmarshal); ok {
 		pu.PostUnmarshal(ctx, &outData)
 	}
-	model.SetModelData(&outData)
-	return true
+	dg.Append(model.SetModelData(&outData)...)
+	return !dg.HasError()
 }
 
 // RscUpdateFabric updates a fabric resource via the NDFC API.
@@ -158,7 +181,7 @@ func updateDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
 	fabricAPI.FabricName = inData.FabricName
 
-	inDataBytes, err := json.Marshal(inData)
+	inDataBytes, err := marshalFabricJSON(model, inData)
 	if err != nil {
 		dg.AddError(
 			"Error Updating Fabric",
