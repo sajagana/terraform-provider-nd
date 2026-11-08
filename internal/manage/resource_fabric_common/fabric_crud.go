@@ -11,8 +11,10 @@ package resource_fabric_common
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"terraform-provider-nd/internal/common/ndapi"
 	"terraform-provider-nd/internal/manage/api"
@@ -53,6 +55,11 @@ func RscCreateFabric(ctx context.Context, client *nd.Client, dg *diag.Diagnostic
 
 // createDefault is the built-in create logic.
 func createDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, model FabricModel) {
+	options := fabricOptions(model)
+	expected := fabricReadbackSnapshot(ctx, options, dg)
+	if dg.HasError() {
+		return
+	}
 	inData := model.GetModelData()
 	if pm, ok := model.(FabricPreMarshal); ok {
 		pm.PreMarshal(ctx, inData)
@@ -62,7 +69,7 @@ func createDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
 
-	fabricPayload, err := json.Marshal(inData)
+	fabricPayload, err := marshalFabricPayload(ctx, inData, options, true)
 	if err != nil {
 		dg.AddError(
 			"Error Creating Fabric",
@@ -71,12 +78,16 @@ func createDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 		return
 	}
 
-	res, err := fabricAPI.Post(fabricPayload, nil)
+	res, err := fabricAPI.Post(fabricPayload, options.APIOptions)
 	if err != nil {
 		dg.AddError(
 			"Error Creating Fabric",
-			fmt.Sprintf("Could not create fabric, unexpected error: %v: %s", err, res.String()),
+			fmt.Sprintf("Could not create fabric, unexpected error: %s", fabricErrorDetails(err, res.String(), options)),
 		)
+		return
+	}
+	if options.ReadbackTimeout > 0 {
+		waitForFabricReadback(ctx, client, dg, model, options, expected)
 		return
 	}
 	// ND BUG - license_tier is not set in the response. Try delaying the read
@@ -118,12 +129,13 @@ func RscValidateFabricType(dg *diag.Diagnostics, model FabricModel, allowedTypes
 // is returned, no error diagnostic is added — the caller should remove the
 // resource from state so Terraform can plan a re-create.
 func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, model FabricModel) bool {
+	options := fabricOptions(model)
 	fabricName := model.GetFabricName()
 	tflog.Debug(ctx, "Read fabric", map[string]interface{}{
 		"fabric_name": fabricName,
 	})
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
-	fabricAPI.FabricName = fabricName
+	fabricAPI.FabricName = fabricRequestName(fabricName, options)
 	respData, err := fabricAPI.Get()
 	if err != nil {
 		if strings.Contains(err.Error(), "StatusCode 404") {
@@ -142,6 +154,9 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 
 	err = json.Unmarshal(respData, &outData)
 	if err != nil {
+		if options.APIOptions != nil && options.APIOptions.DisablePayloadLog {
+			respData = nil
+		}
 		dg.AddError(
 			"Error reading Fabric",
 			fmt.Sprintf("Could not read fabric, unexpected error: %v %v", err, respData),
@@ -151,6 +166,10 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 	outData.Id = fabricName
 	if pu, ok := model.(FabricPostUnmarshal); ok {
 		pu.PostUnmarshal(ctx, &outData)
+	}
+	if options.SetModelData != nil {
+		dg.Append(options.SetModelData(ctx, &outData)...)
+		return !dg.HasError()
 	}
 	model.SetModelData(&outData)
 	return true
@@ -163,6 +182,11 @@ func RscUpdateFabric(ctx context.Context, client *nd.Client, dg *diag.Diagnostic
 
 // updateDefault is the built-in update logic.
 func updateDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, model FabricModel) {
+	options := fabricOptions(model)
+	expected := fabricReadbackSnapshot(ctx, options, dg)
+	if dg.HasError() {
+		return
+	}
 	inData := model.GetModelData()
 	if pm, ok := model.(FabricPreMarshal); ok {
 		pm.PreMarshal(ctx, inData)
@@ -173,9 +197,9 @@ func updateDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 	})
 
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
-	fabricAPI.FabricName = inData.FabricName
+	fabricAPI.FabricName = fabricRequestName(inData.FabricName, options)
 
-	inDataBytes, err := json.Marshal(inData)
+	inDataBytes, err := marshalFabricPayload(ctx, inData, options, false)
 	if err != nil {
 		dg.AddError(
 			"Error Updating Fabric",
@@ -184,13 +208,17 @@ func updateDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics,
 		tflog.Error(ctx, "Error Updating Fabric", map[string]interface{}{"error": err.Error()})
 		return
 	}
-	res, err := fabricAPI.Put(inDataBytes, nil)
+	res, err := fabricAPI.Put(inDataBytes, options.APIOptions)
 	if err != nil {
 		dg.AddError(
 			"Error Updating Fabric",
-			fmt.Sprintf("Could not update fabric, unexpected error: %v: %s", err, res.String()),
+			fmt.Sprintf("Could not update fabric, unexpected error: %s", fabricErrorDetails(err, res.String(), options)),
 		)
 		tflog.Error(ctx, "Error Updating Fabric", map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if options.ReadbackTimeout > 0 {
+		waitForFabricReadback(ctx, client, dg, model, options, expected)
 		return
 	}
 	// Read the updated fabric
@@ -211,17 +239,22 @@ func RscDeleteFabric(ctx context.Context, client *nd.Client, dg *diag.Diagnostic
 
 // deleteDefault is the built-in delete logic.
 func deleteDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, model FabricModel) {
+	options := fabricOptions(model)
 	fabricName := model.GetFabricName()
 	fabricAPI := api.NewFabricAPI(client, ndapi.DefaultFabric)
-	fabricAPI.FabricName = fabricName
+	fabricAPI.FabricName = fabricRequestName(fabricName, options)
 	tflog.Debug(ctx, "Delete fabric", map[string]interface{}{
 		"fabric_name": fabricName,
 	})
 	res, err := fabricAPI.Delete()
 	if err != nil {
+		if options.DeleteNotFoundOK && errors.Is(ndapi.ClassifyRequestError(http.MethodDelete, fabricAPI.DeleteUrl(), nil, err), ndapi.ErrNotFound) {
+			tflog.Debug(ctx, "Fabric is already absent", map[string]interface{}{"fabric_name": fabricName})
+			return
+		}
 		dg.AddError(
 			"Error Deleting Fabric",
-			fmt.Sprintf("Could not delete fabric, unexpected error: %v: %s", err, res.String()),
+			fmt.Sprintf("Could not delete fabric, unexpected error: %s", fabricErrorDetails(err, res.String(), options)),
 		)
 		tflog.Error(ctx, "Error Deleting Fabric", map[string]interface{}{"error": err.Error()})
 		return

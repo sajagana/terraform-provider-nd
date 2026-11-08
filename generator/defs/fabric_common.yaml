@@ -1916,7 +1916,7 @@ resource:
     optional: true
     computed: true
     example: false
-    ndfc_type: bool
+    ndfc_type: bool_or_string
     ndfc_nested:
     - management
     description: If set to strict, only security groups enabled child fabrics will be allowed
@@ -3201,3 +3201,111 @@ resource:
       - collectionSettings
       example: '["creation"]'
     description: List of message bus settings
+
+  # Fabric Group-only fields retained in the shared NDFC transport model.
+  # Child resources expose only the fields declared in their own YAML schemas.
+  - model_name: multisiteOverlayInterConnectType
+    tf_name: multisite_overlay_inter_connect_type
+    type: String
+    ndfc_nested:
+    - management
+    description: Multi-site overlay interconnect method for a Fabric Group
+  - model_name: routeServerCollection
+    tf_name: route_server_collection
+    type: List
+    ndfc_nested:
+    - management
+    attributes:
+    - model_name: routeServerIp
+      tf_name: route_server_ip
+      type: String
+      description: IPv4 or IPv6 address of the route server
+    - model_name: routeServerAsn
+      tf_name: route_server_asn
+      type: String
+      description: Autonomous system number of the route server
+    description: Route servers used by the Fabric Group
+  - model_name: routeServerRedistributeDirectRouteMap
+    tf_name: route_server_redistribute_direct_route_map
+    type: Bool
+    ndfc_type: bool
+    ndfc_nested:
+    - management
+    description: Whether the Fabric Group redistributes direct routes through a route map
+  - model_name: routeServerRoutingTag
+    tf_name: route_server_routing_tag
+    type: Int64
+    ndfc_nested:
+    - management
+    description: Routing tag used by the Fabric Group route server
+  - model_name: enableMsOverlayIfcBgpDesc
+    tf_name: enable_ms_overlay_ifc_bgp_desc
+    type: Bool
+    ndfc_type: bool
+    ndfc_nested:
+    - management
+    description: Whether BGP descriptions are generated for multi-site overlay interfaces
+  - model_name: autoMultisiteUnderlayInterConnect
+    tf_name: auto_multisite_underlay_inter_connect
+    type: Bool
+    ndfc_type: bool
+    ndfc_nested:
+    - management
+    description: Whether the multi-site underlay interconnect is configured automatically
+  - model_name: multisiteDelayRestore
+    tf_name: multisite_delay_restore
+    type: Int64
+    ndfc_nested:
+    - management
+    description: Multi-site control-plane convergence delay in seconds
+  - model_name: multisiteInterConnectBgpAuthentication
+    tf_name: multisite_inter_connect_bgp_authentication
+    type: Bool
+    ndfc_type: bool
+    ndfc_nested:
+    - management
+    description: Whether BGP authentication is enabled for the multi-site interconnect
+  - model_name: multisiteInterConnectBgpAuthKeyType
+    tf_name: multisite_inter_connect_bgp_auth_key_type
+    type: String
+    ndfc_nested:
+    - management
+    description: Encryption type of the multi-site interconnect BGP authentication key
+  - model_name: multisiteInterConnectBgpKey
+    tf_name: multisite_inter_connect_bgp_key
+    type: String
+    sensitive: true
+    write_only: true
+    ndfc_nested:
+    - management
+    description: Encrypted BGP authentication key for the multi-site interconnect
+  - model_name: multisiteLoopbackId
+    tf_name: multisite_loopback_id
+    type: Int64
+    ndfc_nested:
+    - management
+    description: Multi-site loopback identifier for the Fabric Group
+  - model_name: borderGatewayRoutingTag
+    tf_name: border_gateway_routing_tag
+    type: Int64
+    ndfc_nested:
+    - management
+    description: Routing tag used for Fabric Group border-gateway addresses
+  - model_name: multisiteLoopbackIpRange
+    tf_name: multisite_loopback_ip_range
+    type: String
+    ndfc_nested:
+    - management
+    description: IPv4 range used for multi-site loopback addresses
+  - model_name: multisiteUnderlaySubnetRange
+    tf_name: multisite_underlay_subnet_range
+    type: String
+    ndfc_nested:
+    - management
+    description: IPv4 range used for multi-site underlay point-to-point links
+  - model_name: multisiteUnderlaySubnetTargetMask
+    tf_name: multisite_underlay_subnet_target_mask
+    type: Int64
+    ndfc_nested:
+    - management
+    description: Target prefix length for multi-site underlay subnets
