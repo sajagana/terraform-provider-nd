@@ -11,6 +11,7 @@
 package provider
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -798,7 +799,7 @@ func FabricVxlanIbgpModelHelperStateCheck(RscName string, c resource_fabric_comm
 		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("leafibgp_peer_template").String(), c.Management.LeafibgpPeerTemplate))
 	}
 	if c.Management.SecurityGroupTag != nil {
-		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag").String(), strconv.FormatBool(*c.Management.SecurityGroupTag)))
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag").String(), fmt.Sprint(c.Management.SecurityGroupTag)))
 	}
 	if c.Management.SecurityGroupTagPrefix != "" {
 		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag_prefix").String(), c.Management.SecurityGroupTagPrefix))

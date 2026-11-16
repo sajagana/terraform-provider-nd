@@ -9,10 +9,12 @@
 package resource_fabric_common
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -152,7 +154,15 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 	}
 	var outData NDFCFabricCommonModel
 
-	err = json.Unmarshal(respData, &outData)
+	decoder := json.NewDecoder(bytes.NewReader(respData))
+	decoder.UseNumber() // Preserve integers carried by generic API fields.
+	err = decoder.Decode(&outData)
+	if err == nil {
+		var trailing any
+		if trailingErr := decoder.Decode(&trailing); trailingErr != io.EOF {
+			err = fmt.Errorf("fabric response must contain a single JSON value")
+		}
+	}
 	if err != nil {
 		if options.APIOptions != nil && options.APIOptions.DisablePayloadLog {
 			respData = nil
@@ -171,8 +181,8 @@ func readDefault(ctx context.Context, client *nd.Client, dg *diag.Diagnostics, m
 		dg.Append(options.SetModelData(ctx, &outData)...)
 		return !dg.HasError()
 	}
-	model.SetModelData(&outData)
-	return true
+	dg.Append(model.SetModelData(&outData)...)
+	return !dg.HasError()
 }
 
 // RscUpdateFabric updates a fabric resource via the NDFC API.

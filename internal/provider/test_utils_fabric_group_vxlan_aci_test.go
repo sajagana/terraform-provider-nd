@@ -11,6 +11,7 @@
 package provider
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -96,7 +97,7 @@ func FabricGroupVxlanAciModelHelperStateCheck(RscName string, c resource_fabric_
 		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("border_gateway_routing_tag").String(), "54321"))
 	}
 	if c.Management.SecurityGroupTag != nil {
-		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag").String(), c.Management.SecurityGroupTag.String()))
+		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag").String(), fmt.Sprint(c.Management.SecurityGroupTag)))
 	} else {
 		ret = append(ret, resource.TestCheckResourceAttr(RscName, attrPath.AtName("security_group_tag").String(), "strict"))
 	}

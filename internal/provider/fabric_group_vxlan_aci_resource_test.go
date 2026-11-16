@@ -203,9 +203,10 @@ func fabricGroupVxlanAciStateChecks(resourceName string, fabricGroup resource_fa
 		resource.TestCheckResourceAttr(resourceName, "route_server_collection.#", fmt.Sprintf("%d", len(fabricGroup.Management.RouteServerCollection))),
 	)
 	for index, routeServer := range fabricGroup.Management.RouteServerCollection {
-		checks = append(checks, FabricGroupVxlanAciRouteServerCollectionValueHelperStateCheck(
-			resourceName, routeServer, path.Root("route_server_collection").AtListIndex(index),
-		)...)
+		checks = append(checks,
+			resource.TestCheckResourceAttr(resourceName, fmt.Sprintf("route_server_collection.%d.route_server_ip", index), routeServer.RouteServerIp),
+			resource.TestCheckResourceAttr(resourceName, fmt.Sprintf("route_server_collection.%d.route_server_asn", index), routeServer.RouteServerAsn),
+		)
 	}
 	return checks
 }
@@ -379,7 +380,7 @@ func TestAccFabricGroupVxlanAciResourceCRUD(t *testing.T) {
 					}
 					waitForFabricGroupVxlanAciOutsideTerraform(t, client, existingName, true)
 				},
-				ExpectError: regexp.MustCompile(`(?is)Error Creating Fabric.*StatusCode (403|409)`),
+				ExpectError: regexp.MustCompile(`(?is)Error Creating Fabric.*StatusCode\s+(403|409)`),
 			},
 			{
 				Config: func() string {
@@ -440,6 +441,7 @@ func TestAccFabricGroupVxlanAciResourceCRUD(t *testing.T) {
 						"route_server_collection": []resource_fabric_common.NDFCRouteServerCollectionValue{
 							{RouteServerIp: "192.0.2.10", RouteServerAsn: "65001"},
 						},
+						"route_server_redistribute_direct_route_map": true,
 					})
 					helper.GetTFConfigWithSingleResource(
 						s3.Name,
@@ -460,8 +462,9 @@ func TestAccFabricGroupVxlanAciResourceCRUD(t *testing.T) {
 					s4.Index = 4
 					s4.Name = fmt.Sprintf("%s - Clear the route-server collection on the VXLAN-ACI Fabric Group", t.Name())
 					helper.ModifyFabricGroupVxlanAciObject(&fabricGroup, map[string]interface{}{
-						"multisite_overlay_inter_connect_type": "directPeering",
-						"route_server_collection":              []resource_fabric_common.NDFCRouteServerCollectionValue{},
+						"multisite_overlay_inter_connect_type":       "directPeering",
+						"route_server_collection":                    []resource_fabric_common.NDFCRouteServerCollectionValue{},
+						"route_server_redistribute_direct_route_map": false,
 					})
 					helper.GetTFConfigWithSingleResource(
 						s4.Name,

@@ -14,6 +14,7 @@ import (
 	"context"
 	"log"
 	"strconv"
+	custtypes "terraform-provider-nd/internal/common/types"
 	"terraform-provider-nd/internal/manage/resource_fabric_common"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -1327,7 +1328,15 @@ func (v *FabricModel) SetModelData(jsonData *resource_fabric_common.NDFCFabricCo
 	}
 
 	if jsonData.Management.SecurityGroupTag != nil {
-		v.SecurityGroupTag = types.BoolValue(*jsonData.Management.SecurityGroupTag)
+		boolValue, boolConversionErr := custtypes.GenericToBool(jsonData.Management.SecurityGroupTag)
+		if boolConversionErr != nil {
+			err.AddError(
+				"Invalid generic value",
+				"Unable to convert API value for Terraform attribute security_group_tag to bool: "+boolConversionErr.Error(),
+			)
+			return err
+		}
+		v.SecurityGroupTag = types.BoolValue(boolValue)
 	} else {
 		v.SecurityGroupTag = types.BoolNull()
 	}

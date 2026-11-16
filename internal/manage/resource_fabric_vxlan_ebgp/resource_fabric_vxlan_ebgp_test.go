@@ -3,6 +3,7 @@
 package resource_fabric_vxlan_ebgp
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"testing"
@@ -63,7 +64,34 @@ func TestResourceFabricVxlanEbgp(t *testing.T) {
 			}
 			t.Logf("%s_%s Marshall ok", RsType, rscName)
 
-			require.JSONEq(t, string(dataFromModel), string(dataFromFile))
+			// Normalize only bool_or_string fields to their outgoing JSON representation.
+			var expectedPayload map[string]interface{}
+			decoder := json.NewDecoder(bytes.NewReader(dataFromFile))
+			decoder.UseNumber()
+			require.NoError(t, decoder.Decode(&expectedPayload))
+			normalizeBoolOrString := func(fieldPath []string) {
+				parent := expectedPayload
+				for _, name := range fieldPath[:len(fieldPath)-1] {
+					nested, ok := parent[name].(map[string]interface{})
+					if !ok {
+						return
+					}
+					parent = nested
+				}
+				name := fieldPath[len(fieldPath)-1]
+				switch parent[name] {
+				case "true":
+					parent[name] = true
+				case "false":
+					parent[name] = false
+				}
+			}
+
+			normalizeBoolOrString([]string{"management", "securityGroupTag"})
+
+			expectedJSON, err := json.Marshal(expectedPayload)
+			require.NoError(t, err)
+			require.JSONEq(t, string(expectedJSON), string(dataFromModel))
 
 		})
 	}

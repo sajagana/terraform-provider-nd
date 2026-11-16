@@ -9,7 +9,6 @@
 package testing
 
 import (
-	custtypes "terraform-provider-nd/internal/common/types"
 	"terraform-provider-nd/internal/manage/resource_fabric_common"
 )
 
@@ -83,7 +82,7 @@ func ModifyFabricGroupVxlanAciObject(
 		case "scheduled_backup_time":
 			fabricGroup.Management.ScheduledBackupTime = value.(string)
 		case "security_group_tag":
-			fabricGroup.Management.SecurityGroupTag = custtypes.NewBoolOrStringFromString(value.(string))
+			fabricGroup.Management.SecurityGroupTag = value.(string)
 		case "security_group_tag_prefix":
 			fabricGroup.Management.SecurityGroupTagPrefix = value.(string)
 		case "security_group_tag_id_range":

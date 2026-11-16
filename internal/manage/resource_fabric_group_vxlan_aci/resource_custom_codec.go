@@ -10,7 +10,9 @@ package resource_fabric_group_vxlan_aci
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"terraform-provider-nd/internal/common/ndapi"
@@ -48,8 +50,48 @@ func (v *FabricGroupVxlanAciModel) CRUDOptions() resource_fabric_common.FabricCR
 		PruneEmptyObjects:        true,
 		SetModelData:             v.setModelDataPreservingState,
 		ModifyPayload:            v.modifyPayload,
+		ErrorDetails:             v.errorDetails,
 		ReadbackState:            v.readbackState,
 	}
+}
+
+func (v *FabricGroupVxlanAciModel) errorDetails(err error, response string) string {
+	// Backend validation text can echo a supplied key. Preserve suppression
+	// whenever the request can contain this resource's sensitive attribute.
+	if v.MultisiteInterConnectBgpKey.ValueString() != "" {
+		return err.Error()
+	}
+	// Expose only the documented error fields, never a complete response that
+	// could include fabric settings or stored authentication material.
+	type errorMessage struct {
+		Message     string `json:"message"`
+		Description string `json:"description"`
+	}
+	var apiError struct {
+		errorMessage
+		Errors []errorMessage `json:"errors"`
+	}
+	if json.Unmarshal([]byte(response), &apiError) != nil {
+		return err.Error()
+	}
+	messages := append([]errorMessage{apiError.errorMessage}, apiError.Errors...)
+	var details []string
+	for _, message := range messages {
+		detail := strings.TrimSpace(message.Message)
+		if description := strings.TrimSpace(message.Description); description != "" && description != detail {
+			if detail != "" {
+				detail += ": "
+			}
+			detail += description
+		}
+		if detail != "" {
+			details = append(details, detail)
+		}
+	}
+	if len(details) == 0 {
+		return err.Error()
+	}
+	return fmt.Sprintf("%s: %s", err.Error(), strings.Join(details, "; "))
 }
 
 // PreMarshal supplies hidden discriminators and excludes read-only status.

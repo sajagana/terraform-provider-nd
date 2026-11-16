@@ -14,11 +14,13 @@ import (
 	"context"
 	"log"
 	"strconv"
-	"terraform-provider-nd/internal/manage/resource_fabric_common"
+	custtypes "terraform-provider-nd/internal/common/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"terraform-provider-nd/internal/manage/resource_fabric_common"
 )
 
 func (v *FabricVxlanEbgpModel) SetModelData(jsonData *resource_fabric_common.NDFCFabricCommonModel) diag.Diagnostics {
@@ -1208,7 +1210,15 @@ func (v *FabricVxlanEbgpModel) SetModelData(jsonData *resource_fabric_common.NDF
 	}
 
 	if jsonData.Management.SecurityGroupTag != nil {
-		v.SecurityGroupTag = types.BoolValue(*jsonData.Management.SecurityGroupTag)
+		boolValue, boolConversionErr := custtypes.GenericToBool(jsonData.Management.SecurityGroupTag)
+		if boolConversionErr != nil {
+			err.AddError(
+				"Invalid generic value",
+				"Unable to convert API value for Terraform attribute security_group_tag to bool: "+boolConversionErr.Error(),
+			)
+			return err
+		}
+		v.SecurityGroupTag = types.BoolValue(boolValue)
 	} else {
 		v.SecurityGroupTag = types.BoolNull()
 	}
@@ -4244,8 +4254,7 @@ func (v FabricVxlanEbgpModel) GetModelData() *resource_fabric_common.NDFCFabricC
 	}
 
 	if !v.SecurityGroupTag.IsNull() && !v.SecurityGroupTag.IsUnknown() {
-		data.Management.SecurityGroupTag = new(bool)
-		*data.Management.SecurityGroupTag = v.SecurityGroupTag.ValueBool()
+		data.Management.SecurityGroupTag = v.SecurityGroupTag.ValueBool()
 	} else {
 		data.Management.SecurityGroupTag = nil
 	}

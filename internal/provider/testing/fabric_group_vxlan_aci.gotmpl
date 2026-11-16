@@ -17,8 +17,8 @@ resource "nd_fabric_group_vxlan_aci" "{{.RscName}}" {
     {{- if .Management.ScheduledBackupTime}}
     scheduled_backup_time = {{printf "%q" .Management.ScheduledBackupTime}}
     {{- end}}
-    {{- if .Management.SecurityGroupTag}}
-    security_group_tag = {{printf "%q" .Management.SecurityGroupTag.String}}
+    {{- if ne .Management.SecurityGroupTag nil}}
+    security_group_tag = {{printf "%q" (print .Management.SecurityGroupTag)}}
     {{- end}}
     {{- if .Management.SecurityGroupTagPrefix}}
     security_group_tag_prefix = {{printf "%q" .Management.SecurityGroupTagPrefix}}

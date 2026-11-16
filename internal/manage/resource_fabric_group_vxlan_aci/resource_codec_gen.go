@@ -13,7 +13,7 @@ package resource_fabric_group_vxlan_aci
 import (
 	"context"
 	"log"
-	. "terraform-provider-nd/internal/common/types"
+	custtypes "terraform-provider-nd/internal/common/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -140,7 +140,12 @@ func (v *FabricGroupVxlanAciModel) SetModelData(jsonData *resource_fabric_common
 	}
 
 	if jsonData.Management.SecurityGroupTag != nil {
-		v.SecurityGroupTag = types.StringValue(jsonData.Management.SecurityGroupTag.String())
+		stringValue, conversionErr := custtypes.GenericToString(jsonData.Management.SecurityGroupTag)
+		if conversionErr != nil {
+			err.AddError("Invalid generic value", "Unable to convert API value for Terraform attribute security_group_tag to string: "+conversionErr.Error())
+			return err
+		}
+		v.SecurityGroupTag = types.StringValue(stringValue)
 	} else {
 		v.SecurityGroupTag = types.StringNull()
 	}
@@ -335,7 +340,7 @@ func (v FabricGroupVxlanAciModel) GetModelData() *resource_fabric_common.NDFCFab
 	}
 
 	if !v.SecurityGroupTag.IsNull() && !v.SecurityGroupTag.IsUnknown() {
-		data.Management.SecurityGroupTag = NewBoolOrStringFromString(v.SecurityGroupTag.ValueString())
+		data.Management.SecurityGroupTag = v.SecurityGroupTag.ValueString()
 	} else {
 		data.Management.SecurityGroupTag = nil
 	}
