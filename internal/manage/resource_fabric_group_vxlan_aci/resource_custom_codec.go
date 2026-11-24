@@ -13,13 +13,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"terraform-provider-nd/internal/common/ndapi"
 	"terraform-provider-nd/internal/manage/resource_fabric_common"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ resource_fabric_common.FabricPreMarshal = (*FabricGroupVxlanAciModel)(nil)
+var (
+	_ resource_fabric_common.FabricModel         = (*fabricGroupModel)(nil)
+	_ resource_fabric_common.FabricPreMarshal    = (*FabricGroupVxlanAciModel)(nil)
+	_ resource_fabric_common.FabricPostUnmarshal = (*fabricGroupModel)(nil)
+)
 
 const (
 	fabricGroupCategory = "fabricGroup"
@@ -56,23 +62,27 @@ func (v *FabricGroupVxlanAciModel) validateRouteServerConversion(ctx context.Con
 	return diags
 }
 
-func marshalFabricGroupPayload(payload []byte) ([]byte, error) {
-	var group struct {
+// MarshalFabricPayload selects the fabric-group envelope from the shared model.
+func (v *FabricGroupVxlanAciModel) MarshalFabricPayload(data *resource_fabric_common.NDFCFabricCommonModel) ([]byte, error) {
+	managementJSON, err := json.Marshal(data.Management)
+	if err != nil {
+		return nil, fmt.Errorf("could not encode fabric-group management settings")
+	}
+	var management map[string]json.RawMessage
+	if err := json.Unmarshal(managementJSON, &management); err != nil {
+		return nil, fmt.Errorf("could not decode the generated fabric-group request")
+	}
+	// Unset struct-valued management fields can be serialized as empty objects.
+	for name, value := range management {
+		if string(value) == "{}" {
+			delete(management, name)
+		}
+	}
+	return json.Marshal(struct {
 		Name       string                     `json:"name"`
 		Category   string                     `json:"category"`
 		Management map[string]json.RawMessage `json:"management"`
-	}
-	if err := json.Unmarshal(payload, &group); err != nil {
-		return nil, fmt.Errorf("could not decode the generated fabric-group request")
-	}
-	// The group body uses only group fields from the shared model. Unset
-	// struct-valued common fields can still be serialized as empty objects.
-	for name, value := range group.Management {
-		if string(value) == "{}" {
-			delete(group.Management, name)
-		}
-	}
-	return json.Marshal(group)
+	}{Name: data.FabricName, Category: data.Category, Management: management})
 }
 
 func validateFabricGroupIdentity(expectedName, name, category, fabricType string) error {
@@ -85,7 +95,43 @@ func validateFabricGroupIdentity(expectedName, name, category, fabricType string
 	return nil
 }
 
-func (v *FabricGroupVxlanAciModel) setModelData(data *resource_fabric_common.NDFCFabricCommonModel, preserveOptional bool) diag.Diagnostics {
+// fabricGroupModel adapts the generated model to shared CRUD for one operation.
+type fabricGroupModel struct {
+	*FabricGroupVxlanAciModel
+	importing      bool
+	identityOnly   bool
+	writeContext   context.Context
+	createAccepted bool
+}
+
+func (v *FabricGroupVxlanAciModel) FabricAPIOptions() *ndapi.APIOptions {
+	return &ndapi.APIOptions{
+		DisablePayloadLog:         true,
+		AllowDeployInResourceName: true,
+	}
+}
+
+func (v *fabricGroupModel) OnFabricCreateAccepted() {
+	v.createAccepted = true
+}
+
+func (v *fabricGroupModel) PostUnmarshal(_ context.Context, data *resource_fabric_common.NDFCFabricCommonModel) {
+	management := &data.Management
+	// SetModelData preserves the key from the Terraform plan or state.
+	management.MultisiteInterConnectBgpKey = ""
+	// Keep omitted optional values null when GET echoes disabled backup settings.
+	if v.importing || v.identityOnly || (management.ScheduledBackup != nil && *management.ScheduledBackup) {
+		return
+	}
+	if v.ScheduledBackup.IsNull() {
+		management.ScheduledBackup = nil
+	}
+	if v.ScheduledBackupTime.IsNull() {
+		management.ScheduledBackupTime = ""
+	}
+}
+
+func (v *fabricGroupModel) SetModelData(data *resource_fabric_common.NDFCFabricCommonModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if data == nil {
 		diags.AddError("Invalid Fabric Group Response", "The API returned no fabric-group model.")
@@ -95,6 +141,10 @@ func (v *FabricGroupVxlanAciModel) setModelData(data *resource_fabric_common.NDF
 		diags.AddError("Invalid Fabric Group Response", err.Error())
 		return diags
 	}
+	if v.identityOnly {
+		return diags
+	}
+
 	if data.Management.SecurityGroupTag != nil {
 		mode, ok := data.Management.SecurityGroupTag.(string)
 		if !ok || (mode != "loose" && mode != "strict") {
@@ -102,28 +152,50 @@ func (v *FabricGroupVxlanAciModel) setModelData(data *resource_fabric_common.NDF
 			return diags
 		}
 	}
-	current := *v
+	current := *v.FabricGroupVxlanAciModel
 	diags.Append(current.SetModelData(data)...)
 	if diags.HasError() {
 		return diags
 	}
 	current.Id = current.FabricName
-	// GET cannot restore a configured encrypted key reliably: it may omit,
-	// mask, or re-encrypt it. Import deliberately leaves this attribute null.
+	// GET can omit, mask, or re-encrypt the configured key. Import leaves it null.
 	current.MultisiteInterConnectBgpKey = v.MultisiteInterConnectBgpKey
 	if len(data.Management.RouteServerCollection) == 0 && !v.RouteServerCollection.IsNull() && !v.RouteServerCollection.IsUnknown() && len(v.RouteServerCollection.Elements()) == 0 {
 		current.RouteServerCollection = v.RouteServerCollection
 	}
-	if preserveOptional && !current.ScheduledBackup.ValueBool() {
-		// These optional attributes are not computed in the generated schema.
-		// Keep omitted values null when GET echoes disabled backup settings.
-		if v.ScheduledBackup.IsNull() {
-			current.ScheduledBackup = types.BoolNull()
-		}
-		if v.ScheduledBackupTime.IsNull() {
-			current.ScheduledBackupTime = types.StringNull()
+	if v.writeContext != nil {
+		diags.Append(v.preserveOmittedPlanValues(&current)...)
+		if diags.HasError() {
+			return diags
 		}
 	}
-	*v = current
+	*v.FabricGroupVxlanAciModel = current
+	return diags
+}
+
+// preserveOmittedPlanValues keeps API defaults from replacing planned nulls during apply.
+func (v *fabricGroupModel) preserveOmittedPlanValues(current *FabricGroupVxlanAciModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	ctx := v.writeContext
+	var planned, returned types.Object
+	objectType := FabricGroupVxlanAciResourceSchema(ctx).Type()
+	diags.Append(tfsdk.ValueFrom(ctx, v.FabricGroupVxlanAciModel, objectType, &planned)...)
+	diags.Append(tfsdk.ValueFrom(ctx, current, objectType, &returned)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	attributes := returned.Attributes()
+	for name, value := range planned.Attributes() {
+		if value.IsNull() && name != "security_group_status" {
+			attributes[name] = value
+		}
+	}
+
+	normalized, normalizationDiags := types.ObjectValue(planned.AttributeTypes(ctx), attributes)
+	diags.Append(normalizationDiags...)
+	if !diags.HasError() {
+		diags.Append(tfsdk.ValueAs(ctx, normalized, current)...)
+	}
 	return diags
 }

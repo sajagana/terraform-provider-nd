@@ -36,6 +36,10 @@ type NexusDashboardAPICommon struct {
 // APIOptions encapsulates optional settings for API calls.
 type APIOptions struct {
 	DisablePayloadLog bool // suppress body logging for sensitive payloads
+	// AllowDeployInResourceName allows PUT to a known configuration endpoint
+	// when the resource name contains "deploy", such as "deploy-lab".
+	// The shared guard checks the entire URL and would otherwise panic before sending the request.
+	AllowDeployInResourceName bool
 }
 
 // Mods builds the request modifier list from the options and payload.
@@ -59,6 +63,11 @@ func (c NexusDashboardAPICommon) FabricScope() string {
 }
 
 func (c NexusDashboardAPICommon) Get() ([]byte, error) {
+	return c.GetWithOptions(nil)
+}
+
+// GetWithOptions executes the usual CRUD GET with optional request settings.
+func (c NexusDashboardAPICommon) GetWithOptions(opts *APIOptions) ([]byte, error) {
 	guard := Acquire(c.FabricScope(), c.NexusDashboardAPI.RscName(), LockCRUD)
 	defer guard.Release()
 	url := c.NexusDashboardAPI.GetUrl()
@@ -74,7 +83,11 @@ func (c NexusDashboardAPICommon) Get() ([]byte, error) {
 	if c.Client == nil {
 		log.Printf("************Client is nil********************")
 	}
-	res, err := c.Client.GetRawJson(url)
+	var mods []func(*nd.Req)
+	if opts != nil {
+		mods = opts.Mods(nil)
+	}
+	res, err := c.Client.GetRawJson(url, mods...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +115,7 @@ func (c NexusDashboardAPICommon) Put(payload []byte, opts *APIOptions) (gjson.Re
 	defer guard.Release()
 
 	url := c.NexusDashboardAPI.PutUrl()
-	if strings.Contains(url, "deploy") {
+	if strings.Contains(url, "deploy") && (opts == nil || !opts.AllowDeployInResourceName) {
 		panic("Deploy URL detected in Put call. Use DeployPost method for deployments")
 	}
 

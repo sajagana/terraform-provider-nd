@@ -88,7 +88,7 @@ resource:
         format. It must match the APIC bridge-domain MAC.
       type: String
       mandatory: true
-      # validator: 'RegexMatches(regexp.MustCompile(`^[0-9A-Fa-f]{4}(\.[0-9A-Fa-f]{4}){2}$`), "must be a MAC address in xxxx.xxxx.xxxx format")'
+      validator: 'RegexMatches(regexp.MustCompile(`^[0-9A-Fa-f]{4}(\.[0-9A-Fa-f]{4}){2}$`), "must be a MAC address in xxxx.xxxx.xxxx format")'
       ndfc_nested:
         - management
       example: 0022.bdf8.19ff
@@ -250,7 +250,7 @@ resource:
         groups enabled are allowed. Allowed values are `loose` or `strict`.
       type: String
       ndfc_type: string
-      # validator: 'OneOf("loose", "strict")'
+      validator: 'OneOf("loose", "strict")'
       ndfc_nested:
         - management
 

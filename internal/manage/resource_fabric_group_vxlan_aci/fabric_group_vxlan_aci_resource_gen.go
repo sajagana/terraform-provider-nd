@@ -28,6 +28,9 @@ func FabricGroupVxlanAciResourceSchema(ctx context.Context) schema.Schema {
 				Required:            true,
 				Description:         "The shared anycast gateway MAC address for all VTEPs, in `xxxx.xxxx.xxxx` format. It must match the APIC bridge-domain MAC.",
 				MarkdownDescription: "The shared anycast gateway MAC address for all VTEPs, in `xxxx.xxxx.xxxx` format. It must match the APIC bridge-domain MAC.",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Fa-f]{4}(\.[0-9A-Fa-f]{4}){2}$`), "must be a MAC address in xxxx.xxxx.xxxx format"),
+				},
 			},
 			"auto_multisite_underlay_inter_connect": schema.BoolAttribute{
 				Optional:            true,
@@ -178,6 +181,9 @@ func FabricGroupVxlanAciResourceSchema(ctx context.Context) schema.Schema {
 				Optional:            true,
 				Description:         "The security-group mode. In `strict` mode, only child fabrics with security groups enabled are allowed. Allowed values are `loose` or `strict`.",
 				MarkdownDescription: "The security-group mode. In `strict` mode, only child fabrics with security groups enabled are allowed. Allowed values are `loose` or `strict`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("loose", "strict"),
+				},
 			},
 			"security_group_tag_id_range": schema.StringAttribute{
 				Optional:            true,

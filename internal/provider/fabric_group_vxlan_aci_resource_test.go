@@ -11,6 +11,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -211,7 +212,12 @@ func fabricGroupVxlanAciStateChecks(resourceName string, fabricGroup resource_fa
 	return checks
 }
 
-func fabricGroupVxlanAciConfigArgs(resourceName string) map[string]string {
+func fabricGroupVxlanAciConfigArgs(t *testing.T, resourceName string) map[string]string {
+	t.Helper()
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skip("Acceptance tests require TF_ACC")
+	}
+
 	cfg := helper.GetConfig("global")
 	return map[string]string{
 		"RscType":  "nd_fabric_group_vxlan_aci",
@@ -229,7 +235,7 @@ func TestAccFabricGroupVxlanAciResourceMinimal(t *testing.T) {
 		"tf_fg_vxlan_aci_%s",
 		acctest.RandStringFromCharSet(5, acctest.CharSetAlpha),
 	)
-	configArgs := fabricGroupVxlanAciConfigArgs("fabric_group_test")
+	configArgs := fabricGroupVxlanAciConfigArgs(t, "fabric_group_test")
 	tfConfig := new(string)
 	fabricGroup := new(resource_fabric_common.NDFCFabricCommonModel)
 	s1 := &helper.StepInfo{}
@@ -321,7 +327,7 @@ func TestAccFabricGroupVxlanAciResourceCRUD(t *testing.T) {
 	fabricName := fmt.Sprintf("tf_fg_full_vxlan_aci_%s", suffix)
 	replacementName := fmt.Sprintf("tf_fg_replacement_vxlan_aci_%s", suffix)
 	missingName := fmt.Sprintf("tf_fg_missing_vxlan_aci_%s", suffix)
-	configArgs := fabricGroupVxlanAciConfigArgs("fabric_group_test")
+	configArgs := fabricGroupVxlanAciConfigArgs(t, "fabric_group_test")
 	tfConfig := new(string)
 	fabricGroup := new(resource_fabric_common.NDFCFabricCommonModel)
 	cleanupEnabled := false
@@ -589,7 +595,7 @@ func TestAccFabricGroupVxlanAciResourceMissingDelete(t *testing.T) {
 		"tf_fg_delete_vxlan_aci_%s",
 		acctest.RandStringFromCharSet(5, acctest.CharSetAlpha),
 	)
-	configArgs := fabricGroupVxlanAciConfigArgs("fabric_group_test")
+	configArgs := fabricGroupVxlanAciConfigArgs(t, "fabric_group_test")
 	tfConfig := new(string)
 	fabricGroup := new(resource_fabric_common.NDFCFabricCommonModel)
 	s1 := &helper.StepInfo{}
@@ -646,7 +652,7 @@ func TestAccFabricGroupVxlanAciResourceMissingDelete(t *testing.T) {
 }
 
 func TestAccFabricGroupVxlanAciResourceValidation(t *testing.T) {
-	configArgs := fabricGroupVxlanAciConfigArgs("fabric_group_test")
+	configArgs := fabricGroupVxlanAciConfigArgs(t, "fabric_group_test")
 	tfConfig := new(string)
 	fabricGroup := new(resource_fabric_common.NDFCFabricCommonModel)
 	s1 := &helper.StepInfo{}
@@ -668,7 +674,7 @@ func TestAccFabricGroupVxlanAciResourceValidation(t *testing.T) {
 				}(),
 				PreConfig:   func() { helper.LogStep(t, s1.Index, s1.Name, s1.Cfg) },
 				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(regexp.QuoteMeta("must be a MAC address in xxxx.xxxx.xxxx format")),
+				ExpectError: regexp.MustCompile(`(?s)anycast_gateway_mac.*must be a MAC address.*xxxx\.xxxx\.xxxx`),
 			},
 			{
 				Config: func() string {

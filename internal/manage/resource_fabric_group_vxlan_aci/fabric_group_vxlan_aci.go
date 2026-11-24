@@ -78,12 +78,14 @@ func (r *fabricGroupVxlanAciResource) Create(ctx context.Context, req resource.C
 	}
 	plan.Id = plan.FabricName
 	tflog.Debug(ctx, "Creating VXLAN-ACI fabric group", map[string]interface{}{"fabric_name": plan.FabricName.ValueString()})
-	model := fabricGroupCRUDModel{FabricGroupVxlanAciModel: &plan}
-	resource_fabric_common.RscCreateFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &model)
-	if !model.writeAccepted {
+	model := fabricGroupModel{FabricGroupVxlanAciModel: &plan, writeContext: ctx}
+	var writeDiags diag.Diagnostics
+	resource_fabric_common.RscCreateFabric(ctx, r.manageClient.ApiClient, &writeDiags, &model)
+	appendFabricGroupWriteDiagnostics(&resp.Diagnostics, writeDiags)
+	if !model.createAccepted {
 		return
 	}
-	// Return the accepted object's identity even if asynchronous readback fails.
+	// Keep the identity of an accepted create even when default readback fails.
 	if plan.SecurityGroupStatus.IsUnknown() {
 		plan.SecurityGroupStatus = types.StringNull()
 	}
@@ -99,7 +101,7 @@ func (r *fabricGroupVxlanAciResource) Read(ctx context.Context, req resource.Rea
 	if resp.Diagnostics.HasError() || !r.configured(&resp.Diagnostics) {
 		return
 	}
-	model := fabricGroupCRUDModel{FabricGroupVxlanAciModel: &state}
+	model := fabricGroupModel{FabricGroupVxlanAciModel: &state}
 	found := resource_fabric_common.RscGetFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &model)
 	if resp.Diagnostics.HasError() {
 		return
@@ -127,14 +129,19 @@ func (r *fabricGroupVxlanAciResource) Update(ctx context.Context, req resource.U
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	plan.Id = plan.FabricName
-	model := fabricGroupCRUDModel{
-		FabricGroupVxlanAciModel: &plan,
-		verifyRouteServerRemoval: plan.RouteServerCollection.IsNull() && len(state.RouteServerCollection.Elements()) != 0,
+	if !r.readFabricGroupIdentity(ctx, &resp.Diagnostics, &state) {
+		if !resp.Diagnostics.HasError() {
+			resp.Diagnostics.AddError("Error Updating Fabric Group", fmt.Sprintf("Fabric group %q no longer exists. Refresh Terraform state before applying again.", state.GetFabricName()))
+		}
+		return
 	}
+	plan.Id = plan.FabricName
+	model := fabricGroupModel{FabricGroupVxlanAciModel: &plan, writeContext: ctx}
 	tflog.Debug(ctx, "Updating VXLAN-ACI fabric group", map[string]interface{}{"fabric_name": plan.FabricName.ValueString()})
-	resource_fabric_common.RscUpdateFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &model)
-	if !model.writeAccepted || resp.Diagnostics.HasError() {
+	var writeDiags diag.Diagnostics
+	resource_fabric_common.RscUpdateFabric(ctx, r.manageClient.ApiClient, &writeDiags, &model)
+	appendFabricGroupWriteDiagnostics(&resp.Diagnostics, writeDiags)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -149,8 +156,10 @@ func (r *fabricGroupVxlanAciResource) Delete(ctx context.Context, req resource.D
 	if resp.Diagnostics.HasError() || !r.configured(&resp.Diagnostics) {
 		return
 	}
-	model := fabricGroupCRUDModel{FabricGroupVxlanAciModel: &state}
-	resource_fabric_common.RscDeleteFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &model)
+	if !r.readFabricGroupIdentity(ctx, &resp.Diagnostics, &state) {
+		return
+	}
+	resource_fabric_common.RscDeleteFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &state)
 }
 
 func (r *fabricGroupVxlanAciResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -164,7 +173,7 @@ func (r *fabricGroupVxlanAciResource) ImportState(ctx context.Context, req resou
 	state := FabricGroupVxlanAciModel{Id: types.StringValue(req.ID), FabricName: types.StringValue(req.ID)}
 	// Import hydrates optional backup settings too. The encrypted BGP key is
 	// intentionally not imported; configure it before changing authentication.
-	model := fabricGroupCRUDModel{FabricGroupVxlanAciModel: &state, importing: true}
+	model := fabricGroupModel{FabricGroupVxlanAciModel: &state, importing: true}
 	if !resource_fabric_common.RscGetFabric(ctx, r.manageClient.ApiClient, &resp.Diagnostics, &model) {
 		if !resp.Diagnostics.HasError() {
 			resp.Diagnostics.AddError("Error Importing Fabric Group", fmt.Sprintf("Fabric group %q was not found.", req.ID))
@@ -174,6 +183,22 @@ func (r *fabricGroupVxlanAciResource) ImportState(ctx context.Context, req resou
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if !resp.Diagnostics.HasError() {
 		tflog.Debug(ctx, "Imported VXLAN-ACI fabric group", map[string]interface{}{"fabric_name": req.ID})
+	}
+}
+
+// Check the remote category, type, and name before updating or deleting by name.
+func (r *fabricGroupVxlanAciResource) readFabricGroupIdentity(ctx context.Context, diags *diag.Diagnostics, state *FabricGroupVxlanAciModel) bool {
+	model := fabricGroupModel{FabricGroupVxlanAciModel: state, identityOnly: true}
+	return resource_fabric_common.RscGetFabric(ctx, r.manageClient.ApiClient, diags, &model)
+}
+
+func appendFabricGroupWriteDiagnostics(target *diag.Diagnostics, source diag.Diagnostics) {
+	for _, d := range source {
+		if d.Severity() == diag.SeverityError && (d.Summary() == "Error Creating Fabric" || d.Summary() == "Error Updating Fabric") {
+			target.AddError("Error Writing Fabric Group", d.Detail())
+			continue
+		}
+		target.Append(d)
 	}
 }
 
