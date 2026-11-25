@@ -108,7 +108,7 @@ then
     go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
 fi
 
-$GOPATH/bin/tfplugindocs generate
+$GOPATH/bin/tfplugindocs generate --provider-name "$PROVIDER"
 go run ./generator/doc_category.go
 
 rm -rf ./out
